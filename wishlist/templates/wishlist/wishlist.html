@@ -1,0 +1,168 @@
+{%extends "wishlist/base.html"%}
+{%load bootstrap3%}
+
+{%block content%}
+
+    <style>
+    .list-group-item.row div {
+        padding: 0;
+    }
+    .btn-available, .btn-reserved-other, .btn-reserved-me {
+        display: none;
+        width: 100%;
+        text-align: center;
+    }
+    </style>
+
+    {%if is_editing or is_creating%}
+        <h1>{%if is_editing%}Uprav{%else%}Vytvoř{%endif%} seznam přání</h1>
+        <form method="post">
+            {%csrf_token%}
+            {%bootstrap_field wishlistform.name show_label=False%}
+            {{ wishformset.management_form }}
+            {%for wishform in wishformset%}
+                <div class="row">
+                    <div class="col-md-9">
+                            {%bootstrap_field wishform.wish show_label=False%}
+                    </div>
+                    <div class="col-md-2">
+                            {%bootstrap_field wishform.multiple_reservation show_label=False%}
+                    </div>
+                    <div class="col-md-1">
+                            {%bootstrap_field wishform.id show_label=False%}
+                            {%bootstrap_field wishform.DELETE%}
+                    </div>
+                </div>
+            {%endfor%}
+            </table>
+            <div class="form-group">
+                <button class="btn btn-info" id="addNewWish"><i class="fas fa-plus"></i>&nbsp; Přidat další přání</button>
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-check"></i>&nbsp; Uložit</button>
+            </div>
+        </form>
+        {%if wishlist%}
+            <h2>Odkaz na sdílení</h2>
+            <input type="text" value="{{wishlist.share_link}}" style="width: 100%;" disabled />
+            <h2>Odkaz na úpravu</h2>
+            <input type="text" value="{{wishlist.edit_link}}" style="width: 100%;" disabled />
+        {%endif%}
+
+    {%else%}
+        <div class="row">
+            <div class="col-md-12">
+                <h1>{%if wishlist.name%}{{wishlist.name}} s vámi sdílí svůj seznam přání{%else%}Seznam přání{%endif%}</h1>
+            </div>
+        </div>
+        <ul class="list-group">
+        {%for wish in wishlist.wishes.all%}
+            <li class="list-group-item clearfix row">
+                <div class="col-md-10">
+                {{wish.wish|linebreaks|urlize}}
+                </div>
+                <div class="col-md-2 btn-reservations text-right" data-id="{{wish.id}}" data-reserved-count="{{wish.reserved_count}}" data-multiple-reservation="{{wish.multiple_reservation}}">
+                    <button class="btn btn-danger btn-reserved-other"><i class="fas fa-times"></i>&nbsp; Již rezervováno</button>
+                    <button class="btn btn-success btn-available"><i class="fas fa-check-square"></i>&nbsp; Zařídím / koupím</button>
+                    <button class="btn btn-primary btn-reserved-me"><i class="fas fa-check"></i>&nbsp; Zařizuju</button>
+                </div>
+            </li>
+        {%endfor%}
+        </ul>
+    {%endif%}
+
+    <br />
+    <br />
+    <a href="{%url "wishlist-home"%}" class="btn btn-success btn-lg"><i class="fas fa-tasks"></i>&nbsp; Vytvoř si svůj vlastní seznam přání</a>
+{%endblock%}
+
+{%block extrajs%}
+    <script>
+        var wishlist_slug = '{{wishlist.slug}}'
+        var csrf_token = '{{csrf_token}}'
+        var reserved_wishes = JSON.parse(localStorage.reserved_wishes || '{}')
+        $(document).ready(function(){
+
+            $('.btn-reservations').each(function(){
+                let id = $(this).data('id')
+                let reserved_count = parseInt($(this).data('reserved-count'))
+                let multiple_reservation = $(this).data('multiple-reservation') === 'True'
+                let btns = $('.btn-reservations[data-id='+id+']')
+                if (reserved_wishes[id]) {
+                    $('.btn-reserved-me', btns).show()
+                } else if (reserved_count && !multiple_reservation) {
+                    $('.btn-reserved-other', btns).show()
+                } else {
+                    $('.btn-available', btns).show()
+                }
+            })
+            $('#addNewWish').click(function(e){
+                e.preventDefault()
+                let new_wish = $(e.target).parent().prev().clone()
+                new_wish.find('input[type=hidden]').remove()
+                let index = parseInt(new_wish.find('textarea').attr('id').split('-')[1]) + 1
+                new_wish.find('textarea').attr('id', 'id_wishes-'+index+'-wish').attr('name', 'wishes-'+index+'-wish').val('')
+                new_wish.find('.col-md-9 label').attr('for', 'id_wishes-'+index+'-wish')
+                new_wish.find('.col-md-2 input[type=checkbox]').attr('id', 'id_wishes-'+index+'-multiple_reservation').attr('name', 'wishes-'+index+'-multiple_reservation')
+                new_wish.find('.col-md-2 label').attr('for', 'id_wishes-'+index+'-multiple_reservation')
+                new_wish.find('.col-md-1 input[type=checkbox]').attr('id', 'id_wishes-'+index+'-DELETE').attr('name', 'wishes-'+index+'-DELETE')
+                new_wish.find('.col-md-1 label').attr('for', 'id_wishes-'+index+'-DELETE')
+                //new_wish.find('input[type=hidden]').attr('id', 'id_wishes-'+index+'-id').attr('name', 'wishes-'+index+'-id').val('')
+                $('#id_wishes-TOTAL_FORMS').val(parseInt($('#id_wishes-TOTAL_FORMS').val()) + 1)
+                $(e.target).parent().before(new_wish)
+            })
+
+            // reserve wish
+            $('.btn-available').click(function(e){
+                let id = $(e.target).parent().data('id')
+                reserve(id, function(data){
+                    reserved_wishes[id] = data.secret
+                    localStorage.reserved_wishes = JSON.stringify(reserved_wishes)
+                    let btns = $('.btn-reservations[data-id='+id+']')
+                    $('.btn-available', btns).hide()
+                    $('.btn-reserved-other', btns).hide()
+                    $('.btn-reserved-me', btns).show()
+                })
+            })
+            // un-reserve wish
+            $('.btn-reserved-me').click(function(e){
+                let id = $(e.target).parent().data('id')
+                reserve(id, function(){
+                    delete reserved_wishes[id]
+                    localStorage.reserved_wishes = JSON.stringify(reserved_wishes)
+                    let btns = $('.btn-reservations[data-id='+id+']')
+                    $('.btn-available', btns).show()
+                    $('.btn-reserved-other', btns).hide()
+                    $('.btn-reserved-me', btns).hide()
+                })
+            })
+
+            function reserve(id, callback) {
+                console.log(id)
+                let secret = reserved_wishes[id] || ''
+                $.ajax({
+                    url: '{%url "wishlist-detail" "AAA"%}'.replace('AAA', wishlist_slug),
+                    dataType: 'json',
+                    contentType: 'application/json',
+                    method: 'PUT',
+                    data: JSON.stringify({wish_id: id, secret: secret, csrftoken: csrf_token}),
+                    beforeSend: function(xhr, settings) {
+                        xhr.setRequestHeader("X-CSRFToken", csrf_token);
+                    },
+                }).done(function(data){
+                    console.log('success', data)
+                    console.log('reserved wishes', reserved_wishes)
+                    if (data.error) {
+                        alert(data.error)
+                    } else {
+                        if (callback) {
+                            callback(data)
+                        }
+                    }
+                }).fail(function(data){
+                    console.log('error')
+                })
+            }
+        })
+    </script>
+{%endblock%}

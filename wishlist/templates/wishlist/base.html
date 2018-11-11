@@ -1,0 +1,41 @@
+{% load static %}
+<!DOCTYPE HTML>
+<html lang="cs">
+
+<head>
+	<title>Simple wishlist</title>
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+    <meta name="author" content="Vojtěch Oram">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Bootstrap styles -->
+    <link rel="stylesheet" href="{% static "wishlist/css/bootstrap.min.css" %}" charset="utf-8">
+    <link rel="stylesheet" href="{% static "wishlist/css/bootstrap_theme.css" %}" charset="utf-8">
+    <!-- Font Awesome styles (icons) -->
+    <link rel="stylesheet" href="{% static "wishlist/css/font_awesome.css" %}" charset="utf-8">
+    <!-- Main Template styles -->
+    <link rel="stylesheet" href="{% static "wishlist/css/styles.css" %}" charset="utf-8">
+
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+
+</head>
+
+<body>
+    <div class="container">
+        <br />
+        {% if messages %}
+            {% for message in messages %}
+            <div{% if message.tags %} class="alert alert-{{ message.tags }}"{% endif %}>{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {%block content%}{%endblock%}
+
+        <!-- Scripts queries -->
+        <script src="{% static "wishlist/js/jquery.min.js" %}"></script>
+        <script src="{% static "wishlist/js/jquery.cookie.js" %}"></script>
+        <script src="{% static "wishlist/js/boostrap.min.js" %}"></script>
+        {%block extrajs%}{%endblock%}
+    </div>
+</body>
+</html>
+
