@@ -97,8 +97,8 @@
                 }
             })
             $('#addNewWish').click(function(e){
-                e.preventDefault()
-                let new_wish = $(e.target).parent().prev().clone()
+                let parent_div = $(e.target).closest('div')
+                let new_wish = parent_div.prev().clone()
                 new_wish.find('input[type=hidden]').remove()
                 let index = parseInt(new_wish.find('textarea').attr('id').split('-')[1]) + 1
                 new_wish.find('textarea').attr('id', 'id_wishes-'+index+'-wish').attr('name', 'wishes-'+index+'-wish').val('')
@@ -109,12 +109,12 @@
                 new_wish.find('.col-md-1 label').attr('for', 'id_wishes-'+index+'-DELETE')
                 //new_wish.find('input[type=hidden]').attr('id', 'id_wishes-'+index+'-id').attr('name', 'wishes-'+index+'-id').val('')
                 $('#id_wishes-TOTAL_FORMS').val(parseInt($('#id_wishes-TOTAL_FORMS').val()) + 1)
-                $(e.target).parent().before(new_wish)
+                parent_div.before(new_wish)
             })
 
             // reserve wish
             $('.btn-available').click(function(e){
-                let id = $(e.target).parent().data('id')
+                let id = $(e.target).closest('.btn-reservations').data('id')
                 reserve(id, function(data){
                     reserved_wishes[id] = data.secret
                     localStorage.reserved_wishes = JSON.stringify(reserved_wishes)
@@ -126,7 +126,7 @@
             })
             // un-reserve wish
             $('.btn-reserved-me').click(function(e){
-                let id = $(e.target).parent().data('id')
+                let id = $(e.target).closest('.btn-reservations').data('id')
                 reserve(id, function(){
                     delete reserved_wishes[id]
                     localStorage.reserved_wishes = JSON.stringify(reserved_wishes)
