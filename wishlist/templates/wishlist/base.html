@@ -30,12 +30,17 @@
         {% endif %}
         {%block content%}{%endblock%}
 
-        <!-- Scripts queries -->
-        <script src="{% static "wishlist/js/jquery.min.js" %}"></script>
-        <script src="{% static "wishlist/js/jquery.cookie.js" %}"></script>
-        <script src="{% static "wishlist/js/boostrap.min.js" %}"></script>
-        {%block extrajs%}{%endblock%}
+        <footer class="footer" style="border-top: 1px solid grey; padding-top: 10px; margin-top: 20px;">
+            &copy; <a href="https://oram.cz/">Vojtěch Oram</a> &bull;
+            <a href="https://github.com/flaiming/simple-wishlist" target="_blank"><i class="fab fa-github"></i>&nbsp; GitHub</a>
+        </footer>
     </div>
+
+    <!-- Scripts queries -->
+    <script src="{% static "wishlist/js/jquery.min.js" %}"></script>
+    <script src="{% static "wishlist/js/jquery.cookie.js" %}"></script>
+    <script src="{% static "wishlist/js/boostrap.min.js" %}"></script>
+    {%block extrajs%}{%endblock%}
 </body>
 </html>
 
