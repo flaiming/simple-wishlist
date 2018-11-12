@@ -18,7 +18,7 @@ class WishList(models.Model):
     edit_slug = models.CharField(max_length=8, unique=True)
 
     def __unicode__(self):
-        return "Wishlist %s" % self.slug
+        return "Wishlist %s (%s)" % (self.slug, self.name)
 
     def create_hash(self, text=''):
         h = hashlib.sha1()
@@ -43,6 +43,9 @@ class WishList(models.Model):
     @property
     def edit_link(self):
         return "http://%s%s?edit_slug=%s" % (Site.objects.get_current().domain, reverse('wishlist-detail', args=[self.slug]), self.edit_slug)
+
+    def get_absolute_url(self):
+        return reverse('wishlist-detail', args=(self.slug, ))
 
 
 class Wish(models.Model):
