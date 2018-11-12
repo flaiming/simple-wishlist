@@ -97,6 +97,7 @@
                 }
             })
             $('#addNewWish').click(function(e){
+                e.preventDefault()
                 let parent_div = $(e.target).closest('div')
                 let new_wish = parent_div.prev().clone()
                 new_wish.find('input[type=hidden]').remove()
