@@ -72,3 +72,10 @@ class Wish(models.Model):
         if not self.secret:
             self.secret = self.create_hash()
         super(Wish, self).save(*args, **kwargs)
+
+    @property
+    def wish_highlighted(self):
+        if ' - ' in self.wish.splitlines()[0]:
+            parts = self.wish.split(' - ')
+            return "<strong>%s</strong> - %s" % (parts[0], ' - '.join(parts[1:]))
+        return self.wish

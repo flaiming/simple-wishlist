@@ -59,7 +59,7 @@
         {%for wish in wishlist.wishes.all%}
             <li class="list-group-item clearfix row">
                 <div class="col-md-10">
-                {{wish.wish|linebreaks|urlize}}
+                {{wish.wish_highlighted|safe|linebreaks|urlize}}
                 </div>
                 <div class="col-md-2 btn-reservations text-right" data-id="{{wish.id}}" data-reserved-count="{{wish.reserved_count}}" data-multiple-reservation="{{wish.multiple_reservation}}">
                     <button class="btn btn-danger btn-reserved-other"><i class="fas fa-times"></i>&nbsp; Již rezervováno</button>

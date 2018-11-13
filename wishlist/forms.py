@@ -2,6 +2,7 @@
 from django import forms
 from wishlist.models import Wish, WishList
 from django.forms.formsets import DELETION_FIELD_NAME
+from django.utils.html import strip_tags
 
 
 class WishForm(forms.ModelForm):
@@ -15,6 +16,9 @@ class WishForm(forms.ModelForm):
         labels = {
             DELETION_FIELD_NAME: 'ads',
         }
+
+    def clean_wish(self):
+        return strip_tags(self.cleaned_data['wish'])
 
 
 class WishListForm(forms.ModelForm):
