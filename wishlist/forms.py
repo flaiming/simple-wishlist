@@ -3,6 +3,7 @@ from django import forms
 from wishlist.models import Wish, WishList
 from django.forms.formsets import DELETION_FIELD_NAME
 from django.utils.html import strip_tags
+from django.core.mail import send_mail
 
 
 class WishForm(forms.ModelForm):
@@ -22,7 +23,25 @@ class WishForm(forms.ModelForm):
 
 
 class WishListForm(forms.ModelForm):
+    email = forms.EmailField(label=u"Email pro zaslání odkazu pro úpravu (nepovinné)", required=False)
 
     class Meta:
         model = WishList
-        fields = ['name']
+        fields = ['name', 'email']
+
+    def save(self, commit=True):
+        email = self.cleaned_data['email']
+        super(WishListForm, self).save(commit=commit)
+        if email:
+            # send user an email with edit link
+            send_mail(
+                u"Odkaz pro úpravu seznamu přání",
+                u"""Dobrý den,
+posílám odkaz na úpravu Vašeho seznamu přání: {edit_link}
+
+Vojtěch Oram
+http://wishlist.oram.cz""".format(edit_link=self.instance.edit_link),
+                "vojtech@oram.cz",
+                [email],
+                fail_silently=False
+            )
