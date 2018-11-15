@@ -18,12 +18,12 @@
         <h1>{%if is_editing%}Uprav{%else%}Vytvoř{%endif%} seznam přání</h1>
         <form method="post">
             {%csrf_token%}
-            {%bootstrap_field wishlistform.name show_label=False%}
+            {%bootstrap_field wishlistform.name show_label=False addon_before='<i class="fas fa-user"></i>'%}
             {{ wishformset.management_form }}
             {%for wishform in wishformset%}
                 <div class="row">
                     <div class="col-md-9">
-                            {%bootstrap_field wishform.wish show_label=False%}
+                            {%bootstrap_field wishform.wish show_label=False addon_before='<i class="fas fa-check"></i>'%}
                     </div>
                     <div class="col-md-2">
                             {%bootstrap_field wishform.multiple_reservation show_label=False%}
@@ -38,7 +38,7 @@
             <div class="form-group">
                 <button class="btn btn-info" id="addNewWish"><i class="fas fa-plus"></i>&nbsp; Přidat další přání</button>
             </div>
-            {%bootstrap_field wishlistform.email show_label=False%}
+            {%bootstrap_field wishlistform.email show_label=False addon_before='@'%}
             <div class="form-group">
                 <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-check"></i>&nbsp; Uložit</button>
             </div>
