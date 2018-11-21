@@ -59,13 +59,16 @@
         <ul class="list-group">
         {%for wish in wishlist.wishes.all%}
             <li class="list-group-item clearfix row">
-                <div class="col-md-10">
+                <div class="col-md-9">
                 {{wish.wish_highlighted|safe|linebreaks|urlize}}
                 </div>
-                <div class="col-md-2 btn-reservations text-right" data-id="{{wish.id}}" data-reserved-count="{{wish.reserved_count}}" data-multiple-reservation="{{wish.multiple_reservation}}">
+                <div class="col-md-3 btn-reservations text-right" data-id="{{wish.id}}" data-reserved-count="{{wish.reserved_count}}" data-multiple-reservation="{{wish.multiple_reservation}}">
                     <button class="btn btn-danger btn-reserved-other"><i class="fas fa-times"></i>&nbsp; Již rezervováno</button>
                     <button class="btn btn-success btn-available"><i class="fas fa-check-square"></i>&nbsp; Zařídím / koupím</button>
-                    <button class="btn btn-primary btn-reserved-me"><i class="fas fa-check"></i>&nbsp; Zařizuju</button>
+                    <button class="btn btn-primary btn-reserved-me"><i class="fas fa-check"></i>&nbsp; Zařizuji</button>
+                    {%if wish.multiple_reservation and wish.reserved_count%}
+                    <div class="text-center reserved-count"><span>{{wish.reserved_count|add:-1}}</span>x rezervováno ostatními</div>
+                    {%endif%}
                 </div>
             </li>
         {%endfor%}
@@ -95,6 +98,15 @@
                     $('.btn-reserved-other', btns).show()
                 } else {
                     $('.btn-available', btns).show()
+                }
+                if (multiple_reservation) {
+                    if (reserved_wishes[id] && reserved_count > 1) {
+                        $('.reserved-count span', btns).text(reserved_count - 1)
+                    } else if (reserved_wishes[id]) {
+                        $('.reserved-count', btns).hide()
+                    } else {
+                        $('.reserved-count span', btns).text(reserved_count)
+                    }
                 }
             })
             $('#addNewWish').click(function(e){

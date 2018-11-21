@@ -73,6 +73,9 @@ class WishlistView(TemplateView):
         self.request.session['edit_slugs'] = edit_slugs
 
     def get(self, request, slug=None, *args, **kwargs):
+        """
+        show wishlist
+        """
         wishlist = self.get_object()
         edit_slug = request.GET.get('edit_slug', None)
         if wishlist and edit_slug and wishlist.edit_slug == edit_slug:
@@ -81,6 +84,9 @@ class WishlistView(TemplateView):
         return super(WishlistView, self).get(request, *args, **kwargs)
 
     def post(self, request, slug=None, *args, **kwargs):
+        """
+        create/update wishlist
+        """
         wishlist = self.get_object()
         wishformset = WishFormSet(request.POST, instance=wishlist)
         wishlistform = WishListForm(request.POST, instance=wishlist)
@@ -105,21 +111,27 @@ class WishlistView(TemplateView):
         return self.render_to_response(context)
 
     def put(self, request, *args, **kwargs):
+        """
+        (un)reserve wish
+        """
         data = json.loads(request.body)
         secret = data.get('secret', '')
         wishlist = self.get_object()
         error = ""
         wish = wishlist.wishes.filter(pk=data.get('wish_id', 0)).first()
         if wish:
-            if not wish.reserved_count or wish.multiple_reservation:
+            if secret:
+                if secret == wish.secret:
+                    # un-reserve wish
+                    wish.reserved_count -= 1
+                    wish.save()
+                else:
+                    error = u"Nemáte právo zrušit tuto rezervaci."
+            elif not wish.reserved_count or wish.multiple_reservation:
                 wish.reserved_count += 1
-                wish.save()
-            elif wish.reserved_count and secret:
-                # un-reserve wish
-                wish.reserved_count -= 1
                 wish.save()
             else:
                 error = u"Toto přání je již rezervováno někým jiným."
         else:
             error = u"Wish does not exist."
-        return JsonResponse({'secret': wish.secret if wish else '', 'error': error})
+        return JsonResponse({'secret': wish.secret if wish else '', 'reserved_count': wish.reserved_count, 'error': error})
