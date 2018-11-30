@@ -45,9 +45,9 @@
         </form>
         {%if wishlist%}
             <h2>Odkaz na sdílení</h2>
-            <input type="text" value="{{wishlist.share_link}}" style="width: 100%;" readonly onClick="this.setSelectionRange(0, this.value.length)" />
+            <input type="text" value="{{wishlist.share_link}}" style="width: 100%;" class="select-on-click" readonly />
             <h2>Odkaz na úpravu</h2>
-            <input type="text" value="{{wishlist.edit_link}}" style="width: 100%;" readonly onClick="this.setSelectionRange(0, this.value.length)" />
+            <input type="text" value="{{wishlist.edit_link}}" style="width: 100%;" class="select-on-click" readonly />
         {%endif%}
 
     {%else%}
@@ -149,6 +149,10 @@
                     $('.btn-reserved-other', btns).hide()
                     $('.btn-reserved-me', btns).hide()
                 })
+            })
+
+            $('.select-on-click').click(function(e) {
+                e.target.select()
             })
 
             function reserve(id, callback) {
