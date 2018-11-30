@@ -45,9 +45,9 @@
         </form>
         {%if wishlist%}
             <h2>Odkaz na sdílení</h2>
-            <input type="text" value="{{wishlist.share_link}}" style="width: 100%;" disabled />
+            <input type="text" value="{{wishlist.share_link}}" style="width: 100%;" readonly />
             <h2>Odkaz na úpravu</h2>
-            <input type="text" value="{{wishlist.edit_link}}" style="width: 100%;" disabled />
+            <input type="text" value="{{wishlist.edit_link}}" style="width: 100%;" readonly />
         {%endif%}
 
     {%else%}
