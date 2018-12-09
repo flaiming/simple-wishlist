@@ -72,6 +72,12 @@ class WishlistView(TemplateView):
         edit_slugs[slug] = edit_slug
         self.request.session['edit_slugs'] = edit_slugs
 
+    def remove_edit_slug_from_session(self, slug):
+        edit_slugs = self.request.session.get('edit_slugs', {}) or {}
+        if slug in edit_slugs:
+            del edit_slugs[slug]
+        self.request.session['edit_slugs'] = edit_slugs
+
     def get(self, request, slug=None, *args, **kwargs):
         """
         show wishlist
@@ -81,6 +87,8 @@ class WishlistView(TemplateView):
         if wishlist and edit_slug and wishlist.edit_slug == edit_slug:
             self.add_edit_slug_to_session(slug, edit_slug)
             return HttpResponseRedirect(reverse('wishlist-detail', args=[slug]))
+        if request.GET.get('forget_edit_slug', ''):
+            self.remove_edit_slug_from_session(slug)
         return super(WishlistView, self).get(request, *args, **kwargs)
 
     def post(self, request, slug=None, *args, **kwargs):
