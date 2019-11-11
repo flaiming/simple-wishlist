@@ -43,5 +43,5 @@ Vojtěch Oram
 http://wishlist.oram.cz""".format(edit_link=self.instance.edit_link),
                 "vojtech@oram.cz",
                 [email],
-                fail_silently=False
+                fail_silently=True
             )
