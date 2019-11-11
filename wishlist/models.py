@@ -58,7 +58,7 @@ class Wish(models.Model):
     reserved_count = models.PositiveIntegerField(default=0)
     secret = models.CharField(max_length=8)
 
-    wishlist = models.ForeignKey(WishList, related_name='wishes')
+    wishlist = models.ForeignKey(WishList, related_name='wishes', on_delete=models.CASCADE)
 
     def __unicode__(self):
         return self.wish
