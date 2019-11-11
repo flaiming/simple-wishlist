@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+
 import hashlib
 import datetime
 import random
@@ -13,7 +13,7 @@ from django.contrib.sites.models import Site
 
 class WishList(models.Model):
     created = models.DateTimeField(auto_now_add=True)
-    name = models.CharField(u"Kdo jste?", max_length=100)
+    name = models.CharField("Kdo jste?", max_length=100)
     slug = models.CharField(max_length=8, unique=True)
     edit_slug = models.CharField(max_length=8, unique=True)
 
@@ -22,11 +22,14 @@ class WishList(models.Model):
 
     def create_hash(self, text=''):
         h = hashlib.sha1()
-        h.update(datetime.datetime.now().isoformat())
-        h.update(self.name.encode('utf-8'))
-        h.update(str(random.randint(0, sys.maxint)))
-        h.update(settings.SECRET_KEY)
-        h.update(text)
+        data = [
+            datetime.datetime.now().isoformat(),
+            self.name,
+            str(random.randint(0, sys.maxsize)),
+            settings.SECRET_KEY,
+            text,
+        ]
+        h.update(("".join(data)).encode('utf-8'))
         return h.hexdigest()[:8]
 
     def save(self, *args, **kwargs):
@@ -50,22 +53,25 @@ class WishList(models.Model):
 
 class Wish(models.Model):
     created = models.DateTimeField(auto_now_add=True)
-    wish = models.TextField(u"Zde napište, co si přejete.")
-    multiple_reservation = models.BooleanField(u"Lze rezervovat vícekrát", default=False)
+    wish = models.TextField("Zde napište, co si přejete.")
+    multiple_reservation = models.BooleanField("Lze rezervovat vícekrát", default=False)
     reserved_count = models.PositiveIntegerField(default=0)
     secret = models.CharField(max_length=8)
 
-    wishlist = models.ForeignKey(WishList, related_name='wishes')
+    wishlist = models.ForeignKey(WishList, related_name='wishes', on_delete=models.CASCADE)
 
     def __unicode__(self):
         return self.wish
 
     def create_hash(self):
         h = hashlib.sha1()
-        h.update(datetime.datetime.now().isoformat())
-        h.update(self.wish.encode('utf-8'))
-        h.update(str(random.randint(0, sys.maxint)))
-        h.update(settings.SECRET_KEY)
+        data = [
+            datetime.datetime.now().isoformat(),
+            self.wish,
+            str(random.randint(0, sys.maxsize)),
+            settings.SECRET_KEY,
+        ]
+        h.update(("".join(data)).encode('utf-8'))
         return h.hexdigest()[:8]
 
     def save(self, *args, **kwargs):

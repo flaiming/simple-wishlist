@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+
 import json
 
 from django.urls import reverse
@@ -18,7 +18,7 @@ from django.forms.formsets import DELETION_FIELD_NAME
 class CustomInlineFormSet(BaseInlineFormSet):
     def add_fields(self, form, index):
         super(CustomInlineFormSet, self).add_fields(form, index)
-        form.fields[DELETION_FIELD_NAME].label = u"Smazat"
+        form.fields[DELETION_FIELD_NAME].label = "Smazat"
 
 
 WishFormSet = inlineformset_factory(
@@ -107,7 +107,7 @@ class WishlistView(TemplateView):
                 for to_delete in wishformset.deleted_objects:
                     to_delete.delete()
 
-            messages.add_message(request, messages.SUCCESS, u'Úspěšně uloženo.')
+            messages.add_message(request, messages.SUCCESS, 'Úspěšně uloženo.')
             if self.is_editing():
                 return HttpResponseRedirect(reverse('wishlist-detail', args=[wishlistform.instance.slug]))
             else:
@@ -134,12 +134,12 @@ class WishlistView(TemplateView):
                     wish.reserved_count -= 1
                     wish.save()
                 else:
-                    error = u"Nemáte právo zrušit tuto rezervaci."
+                    error = "Nemáte právo zrušit tuto rezervaci."
             elif not wish.reserved_count or wish.multiple_reservation:
                 wish.reserved_count += 1
                 wish.save()
             else:
-                error = u"Toto přání je již rezervováno někým jiným."
+                error = "Toto přání je již rezervováno někým jiným."
         else:
-            error = u"Wish does not exist."
+            error = "Wish does not exist."
         return JsonResponse({'secret': wish.secret if wish else '', 'reserved_count': wish.reserved_count, 'error': error})

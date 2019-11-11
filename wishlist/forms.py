@@ -23,7 +23,7 @@ class WishForm(forms.ModelForm):
 
 
 class WishListForm(forms.ModelForm):
-    email = forms.EmailField(label=u"Email pro zaslání odkazu pro úpravu (nepovinné)", required=False)
+    email = forms.EmailField(label="Email pro zaslání odkazu pro úpravu (nepovinné)", required=False)
 
     class Meta:
         model = WishList
@@ -35,8 +35,8 @@ class WishListForm(forms.ModelForm):
         if email:
             # send user an email with edit link
             send_mail(
-                u"Odkaz pro úpravu seznamu přání",
-                u"""Dobrý den,
+                "Odkaz pro úpravu seznamu přání",
+                """Dobrý den,
 posílám odkaz na úpravu Vašeho seznamu přání: {edit_link}
 
 Vojtěch Oram
