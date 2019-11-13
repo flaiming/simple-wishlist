@@ -13,7 +13,7 @@ from django.contrib.sites.models import Site
 
 class WishList(models.Model):
     created = models.DateTimeField(auto_now_add=True)
-    name = models.CharField("Kdo jste?", max_length=100)
+    name = models.CharField("Kdo jsi?", max_length=100)
     slug = models.CharField(max_length=8, unique=True)
     edit_slug = models.CharField(max_length=8, unique=True)
 
@@ -53,7 +53,7 @@ class WishList(models.Model):
 
 class Wish(models.Model):
     created = models.DateTimeField(auto_now_add=True)
-    wish = models.TextField("Zde napište, co si přejete.")
+    wish = models.TextField("Zde napiš, co si přeješ.")
     multiple_reservation = models.BooleanField("Lze rezervovat vícekrát", default=False)
     reserved_count = models.PositiveIntegerField(default=0)
     secret = models.CharField(max_length=8)
