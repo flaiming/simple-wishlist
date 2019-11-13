@@ -17,7 +17,7 @@ class WishList(models.Model):
     slug = models.CharField(max_length=8, unique=True)
     edit_slug = models.CharField(max_length=8, unique=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return "Wishlist %s (%s)" % (self.slug, self.name)
 
     def create_hash(self, text=''):
@@ -60,7 +60,7 @@ class Wish(models.Model):
 
     wishlist = models.ForeignKey(WishList, related_name='wishes', on_delete=models.CASCADE)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.wish
 
     def create_hash(self):
