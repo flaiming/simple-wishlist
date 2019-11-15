@@ -122,7 +122,7 @@ class WishlistView(TemplateView):
         """
         (un)reserve wish
         """
-        data = json.loads(request.body)
+        data = json.loads(request.body.decode('utf-8'))
         secret = data.get('secret', '')
         wishlist = self.get_object()
         error = ""
