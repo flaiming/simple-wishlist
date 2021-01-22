@@ -22,7 +22,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['wishlist.oram.cz', 'oram.cz']
+ALLOWED_HOSTS = ['wishlist.oram.cz']
 
 ADMINS = [
     ('Votech Oram', 'vojtech@oram.cz'),
