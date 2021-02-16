@@ -21,6 +21,6 @@ from wishlist import urls as wishlist_urls
 
 
 urlpatterns = [
-    path(r'', include(wishlist_urls)),
     path('admin/', admin.site.urls),
+    path(r'', include(wishlist_urls)),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
