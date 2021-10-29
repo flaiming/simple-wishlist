@@ -1,25 +1,25 @@
 # -*- coding: utf-8 -*-
 from django import forms
-from wishlist.models import Wish, WishList
+from django.core.mail import send_mail
 from django.forms.formsets import DELETION_FIELD_NAME
 from django.utils.html import strip_tags
-from django.core.mail import send_mail
+
+from wishlist.models import Wish, WishList
 
 
 class WishForm(forms.ModelForm):
-
     class Meta:
         model = Wish
-        fields = ['wish', 'multiple_reservation']
+        fields = ["wish", "multiple_reservation"]
         widgets = {
-            'wish': forms.Textarea(attrs={'rows': 2}),
+            "wish": forms.Textarea(attrs={"rows": 2}),
         }
         labels = {
-            DELETION_FIELD_NAME: 'ads',
+            DELETION_FIELD_NAME: "ads",
         }
 
     def clean_wish(self):
-        return strip_tags(self.cleaned_data['wish'])
+        return strip_tags(self.cleaned_data["wish"])
 
 
 class WishListForm(forms.ModelForm):
@@ -27,10 +27,10 @@ class WishListForm(forms.ModelForm):
 
     class Meta:
         model = WishList
-        fields = ['name', 'email']
+        fields = ["name", "email"]
 
     def save(self, commit=True):
-        email = self.cleaned_data['email']
+        email = self.cleaned_data["email"]
         super(WishListForm, self).save(commit=commit)
         if email:
             # send user an email with edit link
@@ -40,8 +40,10 @@ class WishListForm(forms.ModelForm):
 posílám odkaz na úpravu Vašeho seznamu přání: {edit_link}
 
 Vojtěch Oram
-http://wishlist.oram.cz""".format(edit_link=self.instance.edit_link),
+http://wishlist.oram.cz""".format(
+                    edit_link=self.instance.edit_link
+                ),
                 "vojtech@oram.cz",
                 [email],
-                fail_silently=True
+                fail_silently=True,
             )
