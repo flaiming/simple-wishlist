@@ -1,0 +1,15 @@
+[tool.black]
+line-length = 130
+target-version = ["py39"]
+
+[tool.isort]
+line_length = 130
+py_version = 39
+wrap_length = 10
+profile = "black"
+
+[tool.autopep8]
+max_line_length = 130
+in-place = true
+recursive = true
+aggressive = 3
