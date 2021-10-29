@@ -1,2 +1,8 @@
-Django==3.1.13
+Django==3.2.8
 django-bootstrap3==14.2.0
+
+# dev
+pre-commit==2.15.0
+black==21.9b0
+isort==5.9.3
+flake8==4.0.1
