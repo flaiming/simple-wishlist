@@ -1,21 +1,24 @@
 {%extends "wishlist/base.html"%}
-{%load bootstrap3%}
+{%load bootstrap4%}
+
+{%block extrahead%}
+<style>
+.list-group-item.row div {
+    padding: 0;
+}
+.btn-available, .btn-reserved-other, .btn-reserved-me {
+    display: none;
+    width: 100%;
+    text-align: center;
+}
+</style>
+{%endblock%}
 
 {%block content%}
 
-    <style>
-    .list-group-item.row div {
-        padding: 0;
-    }
-    .btn-available, .btn-reserved-other, .btn-reserved-me {
-        display: none;
-        width: 100%;
-        text-align: center;
-    }
-    </style>
 
     {%if is_editing or is_creating%}
-        <h1>{%if is_editing%}Uprav{%else%}Vytvoř{%endif%} seznam přání</h1>
+        <h2>{%if is_editing%}Uprav{%else%}Vytvoř{%endif%} seznam přání</h2>
         <form method="post">
             {%csrf_token%}
             {%bootstrap_field wishlistform.name show_label=False addon_before='<i class="fas fa-user"></i>'%}
@@ -44,40 +47,70 @@
             </div>
         </form>
         {%if wishlist%}
-            <h2>Odkaz na sdílení</h2>
-            <input type="text" value="{{wishlist.share_link}}" style="width: 100%;" class="select-on-click" readonly />
-            <h2>Odkaz na úpravu</h2>
-            <input type="text" value="{{wishlist.edit_link}}" style="width: 100%;" class="select-on-click" readonly />
+            <h2>Odkaz pro sdílení</h2>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <input type="text" value="{{wishlist.share_link}}" class="select-on-click form-control" readonly />
+                </div>
+                <div class="form-group col-md-6">
+                    <button class="btn btn-info copy_to_clipboard">
+                        <i class="fas fa-copy"></i>
+                        Zkopírovat do schránky
+                    </button>
+                    <a href="https://www.facebook.com/sharer/sharer.php?u={{wishlist.share_link}}" target="_blank" class="btn btn-info">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
+                    <a href="http://twitter.com/share?text=Nevíte, co mi dát? Podívejte se tady: &url={{wishlist.share_link}}" class="btn btn-info" target="_blank">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                </div>
+            </div>
+
+            <a href="https://www.facebook.com/sharer/sharer.php?u=example.org" target="_blank">
+  Share on Facebook
+</a>
+            <h2>Odkaz pro úpravu</h2>
+            <p>Tento odkaz si uložte, abyste mohli později seznam přání upravit. Nesdílejte jej dál!</p>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <input type="text" value="{{wishlist.edit_link}}" class="select-on-click form-control" readonly />
+                </div>
+                <div class="form-group col-md-6">
+                    <button class="btn btn-info copy_to_clipboard">
+                        <i class="fas fa-copy"></i>
+                        Zkopírovat do schránky
+                    </button>
+                </div>
+            </div>
         {%endif%}
 
     {%else%}
         <div class="row">
             <div class="col-md-12">
-                <h1>{%if wishlist.name%}{{wishlist.name}} s vámi sdílí svůj seznam přání{%else%}Seznam přání{%endif%}</h1>
+                <h2>{%if wishlist.name%}{{wishlist.name}} s vámi sdílí svůj seznam přání{%else%}Seznam přání{%endif%}</h2>
             </div>
         </div>
         <ul class="list-group">
         {%for wish in wishlist.wishes.all%}
-            <li class="list-group-item clearfix row">
-                <div class="col-md-9">
-                {{wish.wish_highlighted|safe|linebreaks|urlize}}
-                </div>
-                <div class="col-md-3 btn-reservations text-right" data-id="{{wish.id}}" data-reserved-count="{{wish.reserved_count}}" data-multiple-reservation="{{wish.multiple_reservation}}">
-                    <button class="btn btn-danger btn-reserved-other"><i class="fas fa-times"></i>&nbsp; Již rezervováno</button>
-                    <button class="btn btn-success btn-available"><i class="fas fa-check-square"></i>&nbsp; Zařídím / koupím</button>
-                    <button class="btn btn-primary btn-reserved-me"><i class="fas fa-check"></i>&nbsp; Zařizuji</button>
-                    {%if wish.multiple_reservation and wish.reserved_count%}
-                    <div class="text-center reserved-count"><span>{{wish.reserved_count|add:-1}}</span>x rezervováno ostatními</div>
-                    {%endif%}
+            <li class="list-group-item">
+				<div class="d-flex justify-content-between">
+					<div>
+						{{wish.wish_highlighted|safe|linebreaks|urlize}}
+					</div>
+					<div class="btn-reservations" data-id="{{wish.id}}" data-reserved-count="{{wish.reserved_count}}" data-multiple-reservation="{{wish.multiple_reservation}}">
+						<button class="btn btn-danger btn-reserved-other"><i class="fas fa-times"></i>&nbsp; Již rezervováno</button>
+						<button class="btn btn-success btn-available"><i class="fas fa-check-square"></i>&nbsp; Zařídím / koupím</button>
+						<button class="btn btn-primary btn-reserved-me"><i class="fas fa-check"></i>&nbsp; Zařizuji</button>
+						{%if wish.multiple_reservation and wish.reserved_count%}
+						<div class="text-center reserved-count"><span>{{wish.reserved_count|add:-1}}</span>x rezervováno ostatními</div>
+						{%endif%}
+					</div>
                 </div>
             </li>
         {%endfor%}
         </ul>
     {%endif%}
 
-    <br />
-    <br />
-    <a href="{%url "wishlist-home"%}" class="btn btn-success btn-lg" target="_blank"><i class="fas fa-tasks"></i>&nbsp; Vytvoř si svůj vlastní seznam přání</a>
 {%endblock%}
 
 {%block extrajs%}
@@ -181,6 +214,29 @@
                     console.log('error')
                 })
             }
+
+            function copyToClipboard(text) {
+                var sampleTextarea = document.createElement("textarea");
+                document.body.appendChild(sampleTextarea);
+                sampleTextarea.value = text; //save main text in it
+                sampleTextarea.select(); //select textarea contenrs
+                document.execCommand("copy");
+                document.body.removeChild(sampleTextarea);
+            }
+
+            $(".copy_to_clipboard").on("click", function(e) {
+
+                let btn = $(e.target);
+                let copyText = btn.closest(".form-row").find("input[type=text]").first();
+                console.log(copyText)
+
+                copyToClipboard(copyText.val());
+
+                let message = $("<div>", {"class": "alert alert-success mt-3"}).text("Zkopírováno do schránky!");
+                btn.after(message)
+                message.delay(2000).fadeOut(1000);
+
+            })
         })
     </script>
 {%endblock%}

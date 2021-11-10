@@ -136,3 +136,7 @@ class WishlistView(TemplateView):
         else:
             error = "Wish does not exist."
         return JsonResponse({"secret": wish.secret if wish else "", "reserved_count": wish.reserved_count, "error": error})
+
+
+class WishlistIntro(TemplateView):
+    template_name = "wishlist/intro.html"

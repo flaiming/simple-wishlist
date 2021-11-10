@@ -1,8 +1,9 @@
 from django.conf.urls import url
 
-from wishlist.views import WishlistView
+from wishlist.views import WishlistIntro, WishlistView
 
 urlpatterns = [
-    url(r"^$", WishlistView.as_view(), name="wishlist-home"),
+    url(r"^$", WishlistIntro.as_view(), name="wishlist-intro"),
+    url(r"^nove$", WishlistView.as_view(), name="wishlist-create"),
     url(r"^(?P<slug>[\w\d]+)/$", WishlistView.as_view(), name="wishlist-detail"),
 ]

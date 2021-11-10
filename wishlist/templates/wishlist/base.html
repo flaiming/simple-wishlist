@@ -1,16 +1,15 @@
-{% load static %}
+{% load static bootstrap4 %}
 <!DOCTYPE HTML>
 <html lang="cs">
 
 <head>
-	<title>Simple wishlist</title>
+	<title>SdílejPřání.cz</title>
     <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
     <meta name="author" content="Vojtěch Oram">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Bootstrap styles -->
-    <link rel="stylesheet" href="{% static "wishlist/css/bootstrap.min.css" %}" charset="utf-8">
-    <link rel="stylesheet" href="{% static "wishlist/css/bootstrap_theme.css" %}" charset="utf-8">
+    {% bootstrap_css %}
+
     <!-- Font Awesome styles (icons) -->
     <link rel="stylesheet" href="{% static "wishlist/css/font_awesome.css" %}" charset="utf-8">
     <!-- Main Template styles -->
@@ -18,28 +17,49 @@
 
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
 
+    {%block extrahead%}
+    {%endblock%}
+
 </head>
 
 <body>
+
+<nav class="navbar navbar-dark navbar-expand-lg navbar-dark bg-dark shadow-sm mb-5">
+    <div class="container d-flex justify-content-between">
+        <a class="navbar-brand" href="/">SdílejPřání.cz</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item active">
+              <a class="nav-link btn btn-sm btn-outline-secondary btn-no-hover" href="{%url "wishlist-create"%}">
+                <i class="fas fa-plus"></i> Vytvoř nový seznam přání
+            </a>
+          </li>
+        </ul>
+        </div>
+    </div>
+</nav>
+
+
+
+
     <div class="container">
-        <br />
-        {% if messages %}
-            {% for message in messages %}
-            <div{% if message.tags %} class="alert alert-{{ message.tags }}"{% endif %}>{{ message }}</div>
-            {% endfor %}
-        {% endif %}
+        {% bootstrap_messages %}
         {%block content%}{%endblock%}
 
         <footer class="footer" style="border-top: 1px solid grey; padding-top: 10px; margin-top: 20px;">
             &copy; <a href="https://oram.cz/">Vojtěch Oram</a> &bull;
-            <a href="https://github.com/flaiming/simple-wishlist" target="_blank"><i class="fab fa-github"></i>&nbsp; GitHub</a>
+            <a href="https://github.com/flaiming/simple-wishlist" target="_blank"><i class="fab fa-github"></i>&nbsp;GitHub</a>
         </footer>
     </div>
 
     <!-- Scripts queries -->
     <script src="{% static "wishlist/js/jquery.min.js" %}"></script>
     <script src="{% static "wishlist/js/jquery.cookie.js" %}"></script>
-    <script src="{% static "wishlist/js/boostrap.min.js" %}"></script>
+    {% bootstrap_javascript jquery='full' %}
     {%block extrajs%}{%endblock%}
 </body>
 </html>

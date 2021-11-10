@@ -1,5 +1,5 @@
 Django==3.2.8
-django-bootstrap3==14.2.0
+django-bootstrap4==21.1
 
 # dev
 pre-commit==2.15.0

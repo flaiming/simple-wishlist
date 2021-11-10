@@ -1,0 +1,14 @@
+
+h1 {
+    border-bottom: 1px solid grey;
+}
+.card {
+    background-color: #fdf8ff;
+}
+
+.bg-dark {
+    background-color: #502366 !important;
+}
+.btn-no-hover:hover {
+	background-color: initial;
+}

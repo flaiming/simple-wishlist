@@ -1,0 +1,91 @@
+{%extends "wishlist/base.html"%}
+{%load bootstrap4%}
+
+
+{%block content%}
+
+    <h2>Jak na to?</h2>
+    <div class="card-deck mb-4">
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-pencil-alt"></i>
+                    Vytvoř seznam přání
+                </h5>
+                <p class="card-text">
+                    Vyplňte své jméno a napište, co byste si přáli. Volitelně můžete zadat email pro zaslání odkazu pro pozdější úpravu.
+                </p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-paper-plane"></i>
+                    Pošli odkaz přátelům
+                </h5>
+                <p class="card-text">
+                    Zkopírujte si odkaz pro sdílení a pošlete jej přes email, Facebook nebo jinak.
+                </p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="far fa-check-square"></i>
+                    Přátelé mohou rezervovat přání
+                </h5>
+                <p class="card-text">
+                    Abyste nedostali něco vícekrát, darující si mohou označit přání jako rezervovaná. Ostatní to poté uvidí v seznamu přání a mohou se zaměřit na jiné dary.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <h2>Proč použít SdílejPřání.cz?</h2>
+    <div class="card-deck mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-heart"></i>
+                    Jednoduché
+                </h5>
+                <p class="card-text">
+                    Neřešte žádné kategorie, prostě jednotlivá přání popište svými slovy. Případně můžete doplňit odkaz.
+                </p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-user-secret"></i>
+                    Bez registrace
+                </h5>
+                <p class="card-text">
+                    Napište seznam a pošlete na něj odkaz. Žádné přihlašování a registrace.
+                </p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-shield-alt"></i>
+                    Bezpečné
+                </h5>
+                <p class="card-text">
+                    Email pro zaslání odkazu pro pozdější úpravu se používá jen pro tento účel, neukládáme ho.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md text-center">
+
+            <a href="{%url "wishlist-create"%}" class="btn btn-success btn-lg" target="_blank"><i class="fas fa-pencil-alt"></i>&nbsp; Vytvoř si svůj vlastní seznam přání</a>
+        </div>
+    </div>
+
+{%endblock%}
+

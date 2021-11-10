@@ -22,10 +22,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['sdilejprani.cz']
+ALLOWED_HOSTS = ["sdilejprani.cz"]
 
 ADMINS = [
-    ('Votech Oram', 'flaiming@gmail.com'),
+    ("Votech Oram", "flaiming@gmail.com"),
 ]
 
 # Application definition
@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
-    "bootstrap3",
+    "bootstrap4",
     "wishlist",
 ]
 
