@@ -43,7 +43,7 @@
             </div>
             {%bootstrap_field wishlistform.email show_label=False addon_before='@'%}
             <div class="form-group">
-                <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-check"></i>&nbsp; Uložit</button>
+                <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-check"></i>&nbsp; {%if is_editing%}Uložit{%else%}Vytvořit{%endif%}</button>
             </div>
         </form>
         {%if wishlist%}
@@ -57,10 +57,10 @@
                         <i class="fas fa-copy"></i>
                         Zkopírovat do schránky
                     </button>
-                    <a href="https://www.facebook.com/sharer/sharer.php?u={{wishlist.share_link}}" target="_blank" class="btn btn-info">
+                    <a href="https://www.facebook.com/sharer/sharer.php?u={{wishlist.share_link}}" target="_blank" class="btn btn-info" title="sdílejte na Facebooku">
                         <i class="fab fa-facebook-f"></i>
                     </a>
-                    <a href="http://twitter.com/share?text=Nevíte, co mi dát? Podívejte se tady: &url={{wishlist.share_link}}" class="btn btn-info" target="_blank">
+                    <a href="http://twitter.com/share?text=Nevíte, co mi dát? Podívejte se tady: &url={{wishlist.share_link}}" class="btn btn-info" target="_blank" title="sdílejte na Twitteru">
                         <i class="fab fa-twitter"></i>
                     </a>
                 </div>
@@ -78,6 +78,11 @@
                         Zkopírovat do schránky
                     </button>
                 </div>
+            </div>
+            <div class="form-group">
+                <button type="submit" name="delete" value="doit" class="btn btn-danger btn-sm" onclick="return confirm('Opravdu chcete smazat tento seznam přání?');">
+                    <i class="fas fa-times"></i>&nbsp; Smazat seznam přání
+                </button>
             </div>
         {%endif%}
 
@@ -230,7 +235,7 @@
                 copyToClipboard(copyText.val());
 
                 let message = $("<div>", {"class": "alert alert-success mt-3"}).text("Zkopírováno do schránky!");
-                btn.after(message)
+                btn.parent().append(message);
                 message.delay(2000).fadeOut(1000);
 
             })

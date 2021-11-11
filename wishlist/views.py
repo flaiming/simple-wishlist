@@ -86,6 +86,13 @@ class WishlistView(TemplateView):
         create/update wishlist
         """
         wishlist = self.get_object()
+
+        if request.POST.get("delete") == "doit":
+            # delete this wishlist
+            wishlist.delete()
+            messages.success(request, "Váš seznam přání byl úspěšně smazán.")
+            return HttpResponseRedirect(reverse("wishlist-intro"))
+
         wishformset = WishFormSet(request.POST, instance=wishlist)
         wishlistform = WishListForm(request.POST, instance=wishlist)
         if wishformset.is_valid() and wishlistform.is_valid():
