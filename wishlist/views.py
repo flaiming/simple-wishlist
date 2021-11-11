@@ -93,6 +93,12 @@ class WishlistView(TemplateView):
             messages.success(request, "Váš seznam přání byl úspěšně smazán.")
             return HttpResponseRedirect(reverse("wishlist-intro"))
 
+        if request.POST.get("reset_reservations") == "doit":
+            # reset all reservations
+            wishlist.wishes.update(reserved_count=0)
+            messages.success(request, "Rezervace byly resetovány.")
+            return HttpResponseRedirect(wishlist.get_absolute_url())
+
         wishformset = WishFormSet(request.POST, instance=wishlist)
         wishlistform = WishListForm(request.POST, instance=wishlist)
         if wishformset.is_valid() and wishlistform.is_valid():
@@ -131,8 +137,9 @@ class WishlistView(TemplateView):
             if secret:
                 if secret == wish.secret:
                     # un-reserve wish
-                    wish.reserved_count -= 1
-                    wish.save()
+                    if wish.reserved_count > 0:
+                        wish.reserved_count -= 1
+                        wish.save()
                 else:
                     error = "Nemáte právo zrušit tuto rezervaci."
             elif not wish.reserved_count or wish.multiple_reservation:

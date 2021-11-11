@@ -50,6 +50,13 @@ class WishList(models.Model):
             self.edit_slug,
         )
 
+    @property
+    def reserved_count(self):
+        total = 0
+        for wish in self.wishes.all():
+            total += wish.reserved_count
+        return total
+
     def get_absolute_url(self):
         return reverse("wishlist-detail", args=(self.slug,))
 

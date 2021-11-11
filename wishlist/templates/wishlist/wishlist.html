@@ -18,8 +18,24 @@
 
 
     {%if is_editing or is_creating%}
-        <h2>{%if is_editing%}Uprav{%else%}Vytvoř{%endif%} seznam přání</h2>
         <form method="post">
+            <h2 class="float-left">{%if is_editing%}Uprav{%else%}Vytvoř{%endif%} seznam přání</h2>
+            {%if is_editing%}
+            <div class="dropdown">
+                <button class="btn btn-info dropdown-toggle float-right" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-cog"></i> Nastavení
+                </button>
+                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+
+                    <button type="submit" name="reset_reservations" value="doit" class="dropdown-item" onclick="return confirm('Opravdu chcete resetovat všechny rezervace?');">
+                        <i class="fas fa-redo"></i>&nbsp; Resetovat všechny rezervace ({{wishlist.reserved_count}})
+                    </button>
+                    <button type="submit" name="delete" value="doit" class="dropdown-item" onclick="return confirm('Opravdu chcete smazat tento seznam přání?');">
+                        <i class="fas fa-times"></i>&nbsp; Smazat seznam přání
+                    </button>
+                </div>
+            </div>
+            {%endif%}
             {%csrf_token%}
             {%bootstrap_field wishlistform.name show_label=False addon_before='<i class="fas fa-user"></i>'%}
             {{ wishformset.management_form }}
@@ -45,46 +61,41 @@
             <div class="form-group">
                 <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-check"></i>&nbsp; {%if is_editing%}Uložit{%else%}Vytvořit{%endif%}</button>
             </div>
-        </form>
-        {%if wishlist%}
-            <h2>Odkaz pro sdílení</h2>
-            <div class="form-row">
-                <div class="form-group col-md-6">
-                    <input type="text" value="{{wishlist.share_link}}" class="select-on-click form-control" readonly />
+            {%if wishlist%}
+                <h2>Odkaz pro sdílení</h2>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <input type="text" value="{{wishlist.share_link}}" class="select-on-click form-control" readonly />
+                    </div>
+                    <div class="form-group col-md-6">
+                        <button class="btn btn-info copy_to_clipboard">
+                            <i class="fas fa-copy"></i>
+                            Zkopírovat do schránky
+                        </button>
+                        <a href="https://www.facebook.com/sharer/sharer.php?u={{wishlist.share_link}}" target="_blank" class="btn btn-info" title="sdílejte na Facebooku">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="http://twitter.com/share?text=Nevíte, co mi dát? Podívejte se tady: &url={{wishlist.share_link}}" class="btn btn-info" target="_blank" title="sdílejte na Twitteru">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                    </div>
                 </div>
-                <div class="form-group col-md-6">
-                    <button class="btn btn-info copy_to_clipboard">
-                        <i class="fas fa-copy"></i>
-                        Zkopírovat do schránky
-                    </button>
-                    <a href="https://www.facebook.com/sharer/sharer.php?u={{wishlist.share_link}}" target="_blank" class="btn btn-info" title="sdílejte na Facebooku">
-                        <i class="fab fa-facebook-f"></i>
-                    </a>
-                    <a href="http://twitter.com/share?text=Nevíte, co mi dát? Podívejte se tady: &url={{wishlist.share_link}}" class="btn btn-info" target="_blank" title="sdílejte na Twitteru">
-                        <i class="fab fa-twitter"></i>
-                    </a>
-                </div>
-            </div>
 
-            <h2>Odkaz pro úpravu</h2>
-            <p>Tento odkaz si uložte, abyste mohli později seznam přání upravit. Nesdílejte jej dál!</p>
-            <div class="form-row">
-                <div class="form-group col-md-6">
-                    <input type="text" value="{{wishlist.edit_link}}" class="select-on-click form-control" readonly />
+                <h2>Odkaz pro úpravu</h2>
+                <p>Tento odkaz si uložte, abyste mohli později seznam přání upravit. Nesdílejte jej dál!</p>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <input type="text" value="{{wishlist.edit_link}}" class="select-on-click form-control" readonly />
+                    </div>
+                    <div class="form-group col-md-6">
+                        <button class="btn btn-info copy_to_clipboard">
+                            <i class="fas fa-copy"></i>
+                            Zkopírovat do schránky
+                        </button>
+                    </div>
                 </div>
-                <div class="form-group col-md-6">
-                    <button class="btn btn-info copy_to_clipboard">
-                        <i class="fas fa-copy"></i>
-                        Zkopírovat do schránky
-                    </button>
-                </div>
-            </div>
-            <div class="form-group">
-                <button type="submit" name="delete" value="doit" class="btn btn-danger btn-sm" onclick="return confirm('Opravdu chcete smazat tento seznam přání?');">
-                    <i class="fas fa-times"></i>&nbsp; Smazat seznam přání
-                </button>
-            </div>
-        {%endif%}
+            {%endif%}
+        </form>
 
     {%else%}
         <div class="row">
