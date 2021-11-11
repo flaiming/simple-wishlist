@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from django import forms
+from django.conf import settings
 from django.core.mail import send_mail
 from django.forms.formsets import DELETION_FIELD_NAME
 from django.utils.html import strip_tags
@@ -36,13 +37,11 @@ class WishListForm(forms.ModelForm):
             # send user an email with edit link
             send_mail(
                 "Odkaz pro úpravu seznamu přání",
-                """Dobrý den,
-posílám odkaz na úpravu Vašeho seznamu přání: {edit_link}
+                f"""Dobrý den,
+posílám odkaz na úpravu Vašeho seznamu přání: {self.instance.edit_link}
 
 Vojtěch Oram
-http://wishlist.oram.cz""".format(
-                    edit_link=self.instance.edit_link
-                ),
+{settings.WEB_URL}""",
                 "vojtech@oram.cz",
                 [email],
                 fail_silently=True,

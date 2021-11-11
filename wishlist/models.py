@@ -6,7 +6,6 @@ import random
 import sys
 
 from django.conf import settings
-from django.contrib.sites.models import Site
 from django.db import models
 from django.urls import reverse
 
@@ -41,12 +40,12 @@ class WishList(models.Model):
 
     @property
     def share_link(self):
-        return "http://%s%s" % (Site.objects.get_current().domain, reverse("wishlist-detail", args=[self.slug]))
+        return settings.WEB_URL + reverse("wishlist-detail", args=[self.slug])
 
     @property
     def edit_link(self):
-        return "http://%s%s?edit_slug=%s" % (
-            Site.objects.get_current().domain,
+        return "%s%s?edit_slug=%s" % (
+            settings.WEB_URL,
             reverse("wishlist-detail", args=[self.slug]),
             self.edit_slug,
         )

@@ -188,3 +188,5 @@ LOGGING = {
         },
     },
 }
+
+WEB_URL = "https://sdilejprani.cz"
