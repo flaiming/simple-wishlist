@@ -1,13 +1,8 @@
-# -*- coding: utf-8 -*-
-
-import datetime
-import hashlib
-import random
-import sys
-
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
+
+from .utils import create_hash
 
 
 class WishList(models.Model):
@@ -19,31 +14,19 @@ class WishList(models.Model):
     def __str__(self):
         return "Wishlist %s (%s)" % (self.slug, self.name)
 
-    def create_hash(self, text=""):
-        h = hashlib.sha1()
-        data = [
-            datetime.datetime.now().isoformat(),
-            self.name,
-            str(random.randint(0, sys.maxsize)),
-            settings.SECRET_KEY,
-            text,
-        ]
-        h.update(("".join(data)).encode("utf-8"))
-        return h.hexdigest()[:8]
-
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = self.create_hash()
+            self.slug = create_hash()
         if not self.edit_slug:
-            self.edit_slug = self.create_hash("edit")
+            self.edit_slug = create_hash(self.name, length=24)
         super(WishList, self).save(*args, **kwargs)
 
     @property
-    def share_link(self):
+    def share_link(self) -> str:
         return settings.WEB_URL + reverse("wishlist-detail", args=[self.slug])
 
     @property
-    def edit_link(self):
+    def edit_link(self) -> str:
         return "%s%s?edit_slug=%s" % (
             settings.WEB_URL,
             reverse("wishlist-detail", args=[self.slug]),
@@ -51,7 +34,7 @@ class WishList(models.Model):
         )
 
     @property
-    def reserved_count(self):
+    def reserved_count(self) -> int:
         total = 0
         for wish in self.wishes.all():
             total += wish.reserved_count
@@ -73,20 +56,9 @@ class Wish(models.Model):
     def __str__(self):
         return self.wish
 
-    def create_hash(self):
-        h = hashlib.sha1()
-        data = [
-            datetime.datetime.now().isoformat(),
-            self.wish,
-            str(random.randint(0, sys.maxsize)),
-            settings.SECRET_KEY,
-        ]
-        h.update(("".join(data)).encode("utf-8"))
-        return h.hexdigest()[:8]
-
     def save(self, *args, **kwargs):
         if not self.secret:
-            self.secret = self.create_hash()
+            self.secret = create_hash()
         super(Wish, self).save(*args, **kwargs)
 
     @property

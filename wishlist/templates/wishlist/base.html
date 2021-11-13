@@ -31,11 +31,18 @@
 
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav mr-auto">
-          <li class="nav-item active">
-              <a class="nav-link btn btn-sm btn-outline-secondary btn-no-hover" href="{%url "wishlist-create"%}">
-                <i class="fas fa-plus"></i> Vytvoř nový seznam přání
-            </a>
-          </li>
+            {%for wl in active_wishlists%}
+                <li class="nav-item">
+                    <a class="nav-link {%if wishlist.slug == wl.slug%}active{%endif%}" href="{%url "wishlist-detail" wl.slug%}">
+                        {{wl.name}}
+                    </a>
+                </li>
+            {%endfor%}
+            <li class="nav-item active">
+                <a class="nav-link btn btn-sm btn-no-hover" href="{%url "wishlist-create"%}">
+                    <i class="fas fa-plus"></i> Vytvoř nový seznam přání
+                </a>
+            </li>
         </ul>
         </div>
     </div>

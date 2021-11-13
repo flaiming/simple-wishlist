@@ -15,44 +15,22 @@ from wishlist.models import Wish, WishList
 
 class CustomInlineFormSet(BaseInlineFormSet):
     def add_fields(self, form, index):
-        super(CustomInlineFormSet, self).add_fields(form, index)
+        super().add_fields(form, index)
         form.fields[DELETION_FIELD_NAME].label = "Smazat"
 
 
 WishFormSet = inlineformset_factory(WishList, Wish, WishForm, extra=1, min_num=1, validate_min=True, formset=CustomInlineFormSet)
 
 
-class WishlistView(TemplateView):
-    template_name = "wishlist/wishlist.html"
-    object = None
-
-    def get_object(self):
-        slug = self.kwargs.get("slug", None)
-        if slug:
-            self.object = WishList.objects.filter(slug=slug).first()
-            return self.object
-        return None
-
-    def is_editing(self):
-        edit_slug = self.get_edit_slug_from_session(self.kwargs.get("slug", ""))
-        return self.object and edit_slug and self.object.edit_slug == edit_slug
-
+class WishListViewMixin:
     def get_context_data(self, **kwargs):
-        context = super(WishlistView, self).get_context_data(**kwargs)
-        wishlist = self.get_object()
-        if wishlist:
-            if self.is_editing():
-                # EDIT
-                pass
-            else:
-                # SHOW
-                context["wishlist"] = wishlist
-        context["wishformset"] = WishFormSet(instance=wishlist)
-        context["wishlistform"] = WishListForm(instance=wishlist)
-        context["is_editing"] = self.is_editing()
-        context["is_creating"] = not wishlist
-        context["wishlist"] = wishlist
+        context = super().get_context_data(**kwargs)
+        slugs = self.get_all_slugs_from_session()
+        context["active_wishlists"] = WishList.objects.filter(slug__in=slugs)
         return context
+
+    def get_all_slugs_from_session(self):
+        return set(self.request.session.get("edit_slugs", {}).keys())
 
     def get_edit_slug_from_session(self, slug):
         return (self.request.session.get("edit_slugs", {}) or {}).get(slug, None)
@@ -68,6 +46,39 @@ class WishlistView(TemplateView):
             del edit_slugs[slug]
         self.request.session["edit_slugs"] = edit_slugs
 
+
+class WishlistView(WishListViewMixin, TemplateView):
+    template_name = "wishlist/wishlist.html"
+    object = None
+
+    def get_object(self):
+        slug = self.kwargs.get("slug", None)
+        if slug:
+            self.object = WishList.objects.filter(slug=slug).first()
+            return self.object
+        return None
+
+    def is_editing(self):
+        edit_slug = self.get_edit_slug_from_session(self.kwargs.get("slug", ""))
+        return self.object and edit_slug and self.object.edit_slug == edit_slug
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        wishlist = self.get_object()
+        if wishlist:
+            if self.is_editing():
+                # EDIT
+                pass
+            else:
+                # SHOW
+                context["wishlist"] = wishlist
+        context["wishformset"] = WishFormSet(instance=wishlist)
+        context["wishlistform"] = WishListForm(instance=wishlist)
+        context["is_editing"] = self.is_editing()
+        context["is_creating"] = not wishlist
+        context["wishlist"] = wishlist
+        return context
+
     def get(self, request, slug=None, *args, **kwargs):
         """
         show wishlist
@@ -79,7 +90,7 @@ class WishlistView(TemplateView):
             return HttpResponseRedirect(reverse("wishlist-detail", args=[slug]))
         if request.GET.get("forget_edit_slug", ""):
             self.remove_edit_slug_from_session(slug)
-        return super(WishlistView, self).get(request, *args, **kwargs)
+        return super().get(request, *args, **kwargs)
 
     def post(self, request, slug=None, *args, **kwargs):
         """
@@ -98,6 +109,12 @@ class WishlistView(TemplateView):
             wishlist.wishes.update(reserved_count=0)
             messages.success(request, "Rezervace byly resetovány.")
             return HttpResponseRedirect(wishlist.get_absolute_url())
+
+        if request.POST.get("forget") == "doit":
+            # remove this wishlist from session
+            self.remove_edit_slug_from_session(wishlist.slug)
+            messages.success(request, "Seznam přání byl zapomenut.")
+            return HttpResponseRedirect(reverse("wishlist-intro"))
 
         wishformset = WishFormSet(request.POST, instance=wishlist)
         wishlistform = WishListForm(request.POST, instance=wishlist)
@@ -152,5 +169,5 @@ class WishlistView(TemplateView):
         return JsonResponse({"secret": wish.secret if wish else "", "reserved_count": wish.reserved_count, "error": error})
 
 
-class WishlistIntro(TemplateView):
+class WishlistIntro(WishListViewMixin, TemplateView):
     template_name = "wishlist/intro.html"
