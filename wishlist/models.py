@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models import Max
 from django.urls import reverse
 
 from .utils import create_hash
@@ -51,8 +52,12 @@ class Wish(models.Model):
     multiple_reservation = models.BooleanField("Lze rezervovat vícekrát", default=False)
     reserved_count = models.PositiveIntegerField(default=0)
     secret = models.CharField(max_length=8)
+    position = models.PositiveIntegerField(default=0)
 
     wishlist = models.ForeignKey(WishList, related_name="wishes", on_delete=models.CASCADE)
+
+    class Meta:
+        ordering = ("position", "created", "id")
 
     def __str__(self):
         return self.wish
@@ -60,6 +65,9 @@ class Wish(models.Model):
     def save(self, *args, **kwargs):
         if not self.secret:
             self.secret = create_hash()
+        if not self.position:
+            last_position = self.wishlist.wishes.aggregate(Max("position")).get("position__max") if self.wishlist_id else None
+            self.position = (last_position or 0) + 1
         super(Wish, self).save(*args, **kwargs)
 
     @property

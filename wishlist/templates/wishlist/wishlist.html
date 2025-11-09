@@ -11,6 +11,36 @@
     width: 100%;
     text-align: center;
 }
+.wish-form-row {
+    border: 1px solid #dedede;
+    border-radius: 8px;
+    padding: 12px 10px;
+    margin-bottom: 15px;
+    background: #fff;
+}
+.wish-form-row .drag-col {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 16px;
+}
+.drag-handle {
+    cursor: grab;
+    font-size: 1.5rem;
+    color: #6c757d;
+}
+.drag-handle:active {
+    cursor: grabbing;
+}
+.btn-remove-wish {
+    color: #dc3545;
+    padding: 0;
+}
+.btn-remove-wish:hover,
+.btn-remove-wish:focus {
+    color: #a71d2a;
+    text-decoration: none;
+}
 </style>
 {%endblock%}
 
@@ -18,7 +48,7 @@
 
 
     {%if is_editing or is_creating%}
-        <form method="post">
+        <form method="post" id="wishlist-form">
             <h2 class="float-left">{%if is_editing%}Uprav{%else%}Vytvoř{%endif%} seznam přání</h2>
             {%if is_editing%}
             <div class="dropdown">
@@ -43,23 +73,33 @@
             {%bootstrap_field wishlistform.name show_label=False addon_before='<i class="fas fa-user"></i>'%}
             {%bootstrap_field wishlistform.description show_label=False%}
             {{ wishformset.management_form }}
-            {%for wishform in wishformset%}
-                <div class="row">
-                    <div class="col-md-9">
-                            {%bootstrap_field wishform.wish show_label=False addon_before='<i class="fas fa-check"></i>'%}
+            <div id="wish-formset" class="mt-3">
+                {%for wishform in wishformset%}
+                    <div class="wish-form-row" data-form-index="{{forloop.counter0}}">
+                        <div class="row align-items-center">
+                            <div class="col-md-1 col-2 drag-col">
+                                <span class="drag-handle" title="Přetažením změníš pořadí"><i class="fas fa-grip-vertical"></i></span>
+                                {{ wishform.position }}
+                            </div>
+                            <div class="col-md-8 col-12">
+                                {%bootstrap_field wishform.wish show_label=False addon_before='<i class="fas fa-check"></i>'%}
+                            </div>
+                            <div class="col-md-2 col-6">
+                                {%bootstrap_field wishform.multiple_reservation show_label=False%}
+                            </div>
+                            <div class="col-md-1 col-6">
+                                {{ wishform.id }}
+                                <span class="d-none">{{ wishform.DELETE }}</span>
+                                <button type="button" class="btn btn-link btn-remove-wish" title="Smazat přání" aria-label="Smazat přání">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-2">
-                            {%bootstrap_field wishform.multiple_reservation show_label=False%}
-                    </div>
-                    <div class="col-md-1">
-                            {%bootstrap_field wishform.id show_label=False%}
-                            {%bootstrap_field wishform.DELETE%}
-                    </div>
-                </div>
-            {%endfor%}
-            </table>
+                {%endfor%}
+            </div>
             <div class="form-group">
-                <button class="btn btn-info" id="addNewWish"><i class="fas fa-plus"></i>&nbsp; Přidat další přání</button>
+                <button type="button" class="btn btn-info" id="addNewWish"><i class="fas fa-plus"></i>&nbsp; Přidat další přání</button>
             </div>
             {%bootstrap_field wishlistform.email show_label=False addon_before='@'%}
             <div class="form-group">
@@ -138,6 +178,9 @@
 {%endblock%}
 
 {%block extrajs%}
+    {%if is_editing or is_creating%}
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    {%endif%}
     <script>
         var wishlist_slug = '{{wishlist.slug}}'
         var csrf_token = '{{csrf_token}}'
@@ -166,22 +209,29 @@
                     }
                 }
             })
-            $('#addNewWish').click(function(e){
-                e.preventDefault()
-                let parent_div = $(e.target).closest('div')
-                let new_wish = parent_div.prev().clone()
-                new_wish.find('input[type=hidden]').remove()
-                let index = parseInt(new_wish.find('textarea').attr('id').split('-')[1]) + 1
-                new_wish.find('textarea').attr('id', 'id_wishes-'+index+'-wish').attr('name', 'wishes-'+index+'-wish').val('')
-                new_wish.find('.col-md-9 label').attr('for', 'id_wishes-'+index+'-wish')
-                new_wish.find('.col-md-2 input[type=checkbox]').attr('id', 'id_wishes-'+index+'-multiple_reservation').attr('name', 'wishes-'+index+'-multiple_reservation')
-                new_wish.find('.col-md-2 label').attr('for', 'id_wishes-'+index+'-multiple_reservation')
-                new_wish.find('.col-md-1 input[type=checkbox]').attr('id', 'id_wishes-'+index+'-DELETE').attr('name', 'wishes-'+index+'-DELETE')
-                new_wish.find('.col-md-1 label').attr('for', 'id_wishes-'+index+'-DELETE')
-                //new_wish.find('input[type=hidden]').attr('id', 'id_wishes-'+index+'-id').attr('name', 'wishes-'+index+'-id').val('')
-                $('#id_wishes-TOTAL_FORMS').val(parseInt($('#id_wishes-TOTAL_FORMS').val()) + 1)
-                parent_div.before(new_wish)
-            })
+            const $wishFormset = $('#wish-formset')
+            const $wishlistForm = $('#wishlist-form')
+            if ($wishFormset.length) {
+                initializeSortable($wishFormset)
+                updatePositions()
+                $('#addNewWish').on('click', function(e){
+                    e.preventDefault()
+                    addNewWishRow($wishFormset)
+                })
+                $wishlistForm.on('submit', function(){
+                    updatePositions()
+                })
+                $wishFormset.on('click', '.btn-remove-wish', function(e){
+                    e.preventDefault()
+                    const $row = $(this).closest('.wish-form-row')
+                    const wishText = ($row.find('textarea').val() || '').trim()
+                    const message = wishText ? `Opravdu chcete smazat přání "${wishText}"?` : 'Opravdu chcete smazat toto přání?'
+                    if (!confirm(message)) {
+                        return
+                    }
+                    markRowAsDeleted($row)
+                })
+            }
 
             // reserve wish
             $('.btn-available').click(function(e){
@@ -261,6 +311,102 @@
                 message.delay(2000).fadeOut(1000);
 
             })
+
+            function initializeSortable($container) {
+                if (window.Sortable) {
+                    new Sortable($container[0], {
+                        handle: '.drag-handle',
+                        draggable: '.wish-form-row:not(.wish-form-row--deleted)',
+                        animation: 150,
+                        onEnd: updatePositions,
+                    })
+                }
+            }
+
+            function addNewWishRow($container) {
+                const totalFormsInput = $('#id_wishes-TOTAL_FORMS')
+                const newIndex = parseInt(totalFormsInput.val(), 10)
+                const $template = getTemplateRow($container)
+                resetForm($template)
+                updateFormIndex($template, newIndex)
+                $container.append($template)
+                totalFormsInput.val(newIndex + 1)
+                updatePositions()
+            }
+
+            function getTemplateRow($container) {
+                let $source = $container.children('.wish-form-row').not('.wish-form-row--deleted').last()
+                if (!$source.length) {
+                    $source = $container.children('.wish-form-row').last()
+                }
+                return $source.clone()
+            }
+
+            function resetForm($row) {
+                $row.attr('data-form-index', '')
+                $row.removeClass('wish-form-row--deleted').show()
+                $row.find('textarea').val('')
+                $row.find('input[type=checkbox]').prop('checked', false)
+                $row.find('input[name$="-id"]').val('')
+                $row.find('input[name$="-DELETE"]').prop('checked', false)
+                $row.find('.wish-position-field').val('')
+                $row.find('.invalid-feedback').remove()
+                $row.find('.is-invalid').removeClass('is-invalid')
+                $row.find('.is-valid').removeClass('is-valid')
+            }
+
+            function updateFormIndex($row, index) {
+                $row.attr('data-form-index', index)
+                $row.find('[name]').each(function(){
+                    updateIndexedAttribute($(this), 'name', index)
+                })
+                $row.find('[id]').each(function(){
+                    updateIndexedAttribute($(this), 'id', index)
+                })
+                $row.find('label[for]').each(function(){
+                    updateIndexedAttribute($(this), 'for', index)
+                })
+            }
+
+            function updateIndexedAttribute($element, attribute, index) {
+                const currentValue = $element.attr(attribute)
+                if (!currentValue) {
+                    return
+                }
+                const updated = currentValue.replace(/wishes-(\d+)-/g, 'wishes-' + index + '-')
+                $element.attr(attribute, updated)
+            }
+
+            function updatePositions() {
+                let order = 1
+                $('#wish-formset .wish-form-row').each(function(){
+                    const $row = $(this)
+                    const $positionField = $row.find('.wish-position-field')
+                    if (isRowActive($row)) {
+                        $positionField.val(order++)
+                    } else {
+                        $positionField.val('')
+                    }
+                })
+            }
+
+            function isRowActive($row) {
+                const hasId = ($row.find('input[name$="-id"]').val() || '').trim()
+                const hasWish = ($row.find('textarea').val() || '').trim()
+                const markedForDelete = $row.find('input[name$="-DELETE"]').is(':checked')
+                return Boolean((hasId || hasWish) && !markedForDelete && !$row.hasClass('wish-form-row--deleted'))
+            }
+
+            function markRowAsDeleted($row) {
+                const $deleteField = $row.find('input[name$="-DELETE"]')
+                if ($deleteField.length) {
+                    $deleteField.prop('checked', true)
+                }
+                $row.addClass('wish-form-row--deleted')
+                $row.find('textarea').val('')
+                $row.find('input[type=checkbox]').not('[name$="-DELETE"]').prop('checked', false)
+                $row.slideUp(150, updatePositions)
+            }
         })
     </script>
 {%endblock%}

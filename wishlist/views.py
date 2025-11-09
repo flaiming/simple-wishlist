@@ -18,6 +18,17 @@ class CustomInlineFormSet(BaseInlineFormSet):
         super().add_fields(form, index)
         form.fields[DELETION_FIELD_NAME].label = "Smazat"
 
+    def clean(self):
+        super().clean()
+        for form in self.forms:
+            if not hasattr(form, "cleaned_data"):
+                continue
+            if form.cleaned_data.get(DELETION_FIELD_NAME):
+                continue
+            wish_value = (form.cleaned_data.get("wish") or "").strip()
+            if not wish_value:
+                form.cleaned_data[DELETION_FIELD_NAME] = True
+
 
 WishFormSet = inlineformset_factory(WishList, Wish, WishForm, extra=1, min_num=1, validate_min=True, formset=CustomInlineFormSet)
 
@@ -97,6 +108,7 @@ class WishlistView(WishListViewMixin, TemplateView):
         create/update wishlist
         """
         wishlist = self.get_object()
+        original_wish_ids = set(wishlist.wishes.values_list("id", flat=True)) if wishlist else set()
 
         if request.POST.get("delete") == "doit":
             # delete this wishlist
@@ -126,6 +138,21 @@ class WishlistView(WishListViewMixin, TemplateView):
                     wish.save()
                 for to_delete in wishformset.deleted_objects:
                     to_delete.delete()
+
+                submitted_ids = set()
+                deleted_ids = {obj.id for obj in wishformset.deleted_objects if obj.id}
+                for form in wishformset.forms:
+                    if not hasattr(form, "cleaned_data"):
+                        continue
+                    wish_obj = form.cleaned_data.get("id")
+                    is_deleted = form.cleaned_data.get(DELETION_FIELD_NAME, False)
+                    wish_value = (form.cleaned_data.get("wish") or "").strip()
+                    if wish_obj and not is_deleted and wish_value:
+                        submitted_ids.add(wish_obj.id)
+
+                missing_ids = original_wish_ids - (submitted_ids | deleted_ids)
+                if missing_ids:
+                    wishlistform.instance.wishes.filter(id__in=missing_ids).delete()
 
             messages.add_message(request, messages.SUCCESS, "Úspěšně uloženo.")
             if self.is_editing():

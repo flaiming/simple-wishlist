@@ -9,18 +9,23 @@ from wishlist.models import Wish, WishList
 
 
 class WishForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["wish"].required = False
+
     class Meta:
         model = Wish
-        fields = ["wish", "multiple_reservation"]
+        fields = ["wish", "multiple_reservation", "position"]
         widgets = {
             "wish": forms.Textarea(attrs={"rows": 2}),
+            "position": forms.HiddenInput(attrs={"class": "wish-position-field"}),
         }
         labels = {
             DELETION_FIELD_NAME: "ads",
         }
 
     def clean_wish(self):
-        return strip_tags(self.cleaned_data["wish"])
+        return strip_tags(self.cleaned_data.get("wish", ""))
 
 
 class WishListForm(forms.ModelForm):
