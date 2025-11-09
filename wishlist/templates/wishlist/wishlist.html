@@ -41,6 +41,7 @@
             {%endif%}
             {%csrf_token%}
             {%bootstrap_field wishlistform.name show_label=False addon_before='<i class="fas fa-user"></i>'%}
+            {%bootstrap_field wishlistform.description show_label=False%}
             {{ wishformset.management_form }}
             {%for wishform in wishformset%}
                 <div class="row">
@@ -106,6 +107,13 @@
                 <h2>{%if wishlist.name%}{{wishlist.name}} s vámi sdílí svůj seznam přání{%else%}Seznam přání{%endif%}</h2>
             </div>
         </div>
+        {%if wishlist.description%}
+        <div class="row">
+            <div class="col-md-12">
+                {{wishlist.description|linebreaks}}
+            </div>
+        </div>
+        {%endif%}
         <ul class="list-group">
         {%for wish in wishlist.wishes.all%}
             <li class="list-group-item">

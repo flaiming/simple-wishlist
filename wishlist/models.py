@@ -8,6 +8,7 @@ from .utils import create_hash
 class WishList(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     name = models.CharField("Kdo jsi?", max_length=100)
+    description = models.TextField("Popis seznamu (nepovinné)", blank=True, default="")
     slug = models.CharField(max_length=8, unique=True)
     edit_slug = models.CharField(max_length=8, unique=True)
 

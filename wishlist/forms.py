@@ -28,7 +28,10 @@ class WishListForm(forms.ModelForm):
 
     class Meta:
         model = WishList
-        fields = ["name", "email"]
+        fields = ["name", "description", "email"]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 3, "placeholder": "Popis seznamu přání (nepovinné)"}),
+        }
 
     def save(self, commit=True):
         email = self.cleaned_data["email"]
