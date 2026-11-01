@@ -1,27 +1,38 @@
 from django.conf import settings
 from django.db import models
-from django.db.models import Max
+from django.db.models import Max, Sum
 from django.urls import reverse
+from django.utils.html import escape, format_html
 
 from .utils import create_hash
+
+SLUG_LENGTH = 8
+EDIT_SLUG_LENGTH = 24
+
+
+def unique_hash(model, field: str, length: int) -> str:
+    while True:
+        value = create_hash(length)
+        if not model.objects.filter(**{field: value}).exists():
+            return value
 
 
 class WishList(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     name = models.CharField("Kdo jsi?", max_length=100)
     description = models.TextField("Popis seznamu (nepovinné)", blank=True, default="")
-    slug = models.CharField(max_length=8, unique=True)
-    edit_slug = models.CharField(max_length=8, unique=True)
+    slug = models.CharField(max_length=SLUG_LENGTH, unique=True)
+    edit_slug = models.CharField(max_length=32, unique=True)
 
     def __str__(self):
-        return "Wishlist %s (%s)" % (self.slug, self.name)
+        return f"Wishlist {self.slug} ({self.name})"
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = create_hash()
+            self.slug = unique_hash(WishList, "slug", SLUG_LENGTH)
         if not self.edit_slug:
-            self.edit_slug = create_hash(self.name, length=24)
-        super(WishList, self).save(*args, **kwargs)
+            self.edit_slug = unique_hash(WishList, "edit_slug", EDIT_SLUG_LENGTH)
+        super().save(*args, **kwargs)
 
     @property
     def share_link(self) -> str:
@@ -29,18 +40,11 @@ class WishList(models.Model):
 
     @property
     def edit_link(self) -> str:
-        return "%s%s?edit_slug=%s" % (
-            settings.WEB_URL,
-            reverse("wishlist-detail", args=[self.slug]),
-            self.edit_slug,
-        )
+        return f"{self.share_link}?edit_slug={self.edit_slug}"
 
     @property
     def reserved_count(self) -> int:
-        total = 0
-        for wish in self.wishes.all():
-            total += wish.reserved_count
-        return total
+        return self.wishes.aggregate(total=Sum("reserved_count"))["total"] or 0
 
     def get_absolute_url(self):
         return reverse("wishlist-detail", args=(self.slug,))
@@ -68,11 +72,15 @@ class Wish(models.Model):
         if not self.position:
             last_position = self.wishlist.wishes.aggregate(Max("position")).get("position__max") if self.wishlist_id else None
             self.position = (last_position or 0) + 1
-        super(Wish, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     @property
     def wish_highlighted(self):
-        if " - " in self.wish.splitlines()[0]:
-            parts = self.wish.split(" - ")
-            return "<strong>%s</strong> - %s" % (parts[0], " - ".join(parts[1:]))
-        return self.wish
+        """
+        Escaped wish text with the part before the first " - " (on the first line) in bold.
+        """
+        first_line = self.wish.splitlines()[0] if self.wish else ""
+        if " - " in first_line:
+            head, tail = self.wish.split(" - ", 1)
+            return format_html("<strong>{}</strong> - {}", head, tail)
+        return escape(self.wish)

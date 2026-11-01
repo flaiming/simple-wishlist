@@ -63,7 +63,7 @@
                     <button type="submit" name="delete" value="doit" class="dropdown-item" onclick="return confirm('Opravdu chcete smazat tento seznam přání?');">
                         <i class="fas fa-times"></i>&nbsp; Smazat seznam přání
                     </button>
-                    <button type="submit" name="forget" value="doit" class="dropdown-item" onclick="return confirm('Opravdu si p5ejete zapomenout tento seznam na tomto zařízení? pokud nebudete mít uložený odkaz na úpravu, již ho nebudete moct upravit.');">
+                    <button type="submit" name="forget" value="doit" class="dropdown-item" onclick="return confirm('Opravdu si přejete zapomenout tento seznam na tomto zařízení? Pokud nebudete mít uložený odkaz na úpravu, již ho nebudete moct upravit.');">
                         <i class="fas fa-sign-out-alt"></i>&nbsp; Zapomenout tento seznam na tomto zařízení
                     </button>
                 </div>
@@ -112,7 +112,7 @@
                         <input type="text" value="{{wishlist.share_link}}" class="select-on-click form-control" readonly />
                     </div>
                     <div class="form-group col-md-6">
-                        <button class="btn btn-info copy_to_clipboard">
+                        <button type="button" class="btn btn-info copy_to_clipboard">
                             <i class="fas fa-copy"></i>
                             Zkopírovat do schránky
                         </button>
@@ -132,7 +132,7 @@
                         <input type="text" value="{{wishlist.edit_link}}" class="select-on-click form-control" readonly />
                     </div>
                     <div class="form-group col-md-6">
-                        <button class="btn btn-info copy_to_clipboard">
+                        <button type="button" class="btn btn-info copy_to_clipboard">
                             <i class="fas fa-copy"></i>
                             Zkopírovat do schránky
                         </button>
@@ -159,7 +159,7 @@
             <li class="list-group-item">
 				<div class="d-flex justify-content-between">
 					<div>
-						{{wish.wish_highlighted|safe|linebreaks|urlize}}
+						{{wish.wish_highlighted|linebreaks|urlize}}
 					</div>
 					<div class="btn-reservations" data-id="{{wish.id}}" data-reserved-count="{{wish.reserved_count}}" data-multiple-reservation="{{wish.multiple_reservation}}">
 						<button class="btn btn-danger btn-reserved-other"><i class="fas fa-times"></i>&nbsp; Již rezervováno</button>
@@ -192,6 +192,10 @@
                 let reserved_count = parseInt($(this).data('reserved-count'))
                 let multiple_reservation = $(this).data('multiple-reservation') === 'True'
                 let btns = $('.btn-reservations[data-id='+id+']')
+                if (reserved_wishes[id] && !reserved_count) {
+                    // reservations were reset by the owner meanwhile
+                    forgetReservation(id)
+                }
                 if (reserved_wishes[id]) {
                     $('.btn-reserved-me', btns).show()
                 } else if (reserved_count && !multiple_reservation) {
@@ -239,22 +243,15 @@
                 reserve(id, function(data){
                     reserved_wishes[id] = data.secret
                     localStorage.reserved_wishes = JSON.stringify(reserved_wishes)
-                    let btns = $('.btn-reservations[data-id='+id+']')
-                    $('.btn-available', btns).hide()
-                    $('.btn-reserved-other', btns).hide()
-                    $('.btn-reserved-me', btns).show()
+                    showReservationState(id, 'me')
                 })
             })
             // un-reserve wish
             $('.btn-reserved-me').click(function(e){
                 let id = $(e.target).closest('.btn-reservations').data('id')
                 reserve(id, function(){
-                    delete reserved_wishes[id]
-                    localStorage.reserved_wishes = JSON.stringify(reserved_wishes)
-                    let btns = $('.btn-reservations[data-id='+id+']')
-                    $('.btn-available', btns).show()
-                    $('.btn-reserved-other', btns).hide()
-                    $('.btn-reserved-me', btns).hide()
+                    forgetReservation(id)
+                    showReservationState(id, 'available')
                 })
             })
 
@@ -263,30 +260,43 @@
             })
 
             function reserve(id, callback) {
-                console.log(id)
                 let secret = reserved_wishes[id] || ''
                 $.ajax({
                     url: '{%url "wishlist-detail" "AAA"%}'.replace('AAA', wishlist_slug),
                     dataType: 'json',
                     contentType: 'application/json',
                     method: 'PUT',
-                    data: JSON.stringify({wish_id: id, secret: secret, csrftoken: csrf_token}),
+                    data: JSON.stringify({wish_id: id, secret: secret}),
                     beforeSend: function(xhr, settings) {
                         xhr.setRequestHeader("X-CSRFToken", csrf_token);
                     },
                 }).done(function(data){
-                    console.log('success', data)
-                    console.log('reserved wishes', reserved_wishes)
-                    if (data.error) {
-                        alert(data.error)
-                    } else {
-                        if (callback) {
-                            callback(data)
-                        }
+                    if (callback) {
+                        callback(data)
                     }
-                }).fail(function(data){
-                    console.log('error')
+                }).fail(function(xhr){
+                    let error = (xhr.responseJSON && xhr.responseJSON.error) || 'Něco se pokazilo, zkuste to prosím znovu.'
+                    if (xhr.status === 403) {
+                        // stored secret is no longer valid (reservations were reset and someone else reserved it)
+                        forgetReservation(id)
+                        showReservationState(id, 'other')
+                    } else if (xhr.status === 409) {
+                        showReservationState(id, 'other')
+                    }
+                    alert(error)
                 })
+            }
+
+            function forgetReservation(id) {
+                delete reserved_wishes[id]
+                localStorage.reserved_wishes = JSON.stringify(reserved_wishes)
+            }
+
+            function showReservationState(id, state) {
+                let btns = $('.btn-reservations[data-id='+id+']')
+                $('.btn-available', btns).toggle(state === 'available')
+                $('.btn-reserved-other', btns).toggle(state === 'other')
+                $('.btn-reserved-me', btns).toggle(state === 'me')
             }
 
             function copyToClipboard(text) {
@@ -302,7 +312,6 @@
 
                 let btn = $(e.target);
                 let copyText = btn.closest(".form-row").find("input[type=text]").first();
-                console.log(copyText)
 
                 copyToClipboard(copyText.val());
 

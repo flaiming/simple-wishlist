@@ -1,9 +1,6 @@
-# -*- coding: utf-8 -*-
 from django import forms
 from django.conf import settings
 from django.core.mail import send_mail
-from django.forms.formsets import DELETION_FIELD_NAME
-from django.utils.html import strip_tags
 
 from wishlist.models import Wish, WishList
 
@@ -20,12 +17,6 @@ class WishForm(forms.ModelForm):
             "wish": forms.Textarea(attrs={"rows": 2}),
             "position": forms.HiddenInput(attrs={"class": "wish-position-field"}),
         }
-        labels = {
-            DELETION_FIELD_NAME: "ads",
-        }
-
-    def clean_wish(self):
-        return strip_tags(self.cleaned_data.get("wish", ""))
 
 
 class WishListForm(forms.ModelForm):
@@ -40,7 +31,7 @@ class WishListForm(forms.ModelForm):
 
     def save(self, commit=True):
         email = self.cleaned_data["email"]
-        super(WishListForm, self).save(commit=commit)
+        super().save(commit=commit)
         if email:
             # send user an email with edit link
             send_mail(

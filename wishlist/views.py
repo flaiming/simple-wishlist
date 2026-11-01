@@ -1,16 +1,19 @@
 import json
 
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
+from django.db.models import F
 from django.db.transaction import atomic
 from django.forms import inlineformset_factory
 from django.forms.formsets import DELETION_FIELD_NAME
 from django.forms.models import BaseInlineFormSet
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from django.views.generic import TemplateView
 
 from wishlist.forms import WishForm, WishListForm
 from wishlist.models import Wish, WishList
+from wishlist.utils import create_hash
 
 
 class CustomInlineFormSet(BaseInlineFormSet):
@@ -95,6 +98,8 @@ class WishlistView(WishListViewMixin, TemplateView):
         show wishlist
         """
         wishlist = self.get_object()
+        if slug and not wishlist:
+            raise Http404("Seznam přání neexistuje.")
         edit_slug = request.GET.get("edit_slug", None)
         if wishlist and edit_slug and wishlist.edit_slug == edit_slug:
             self.add_edit_slug_to_session(slug, edit_slug)
@@ -108,25 +113,32 @@ class WishlistView(WishListViewMixin, TemplateView):
         create/update wishlist
         """
         wishlist = self.get_object()
+        if slug and not wishlist:
+            raise Http404("Seznam přání neexistuje.")
+        if wishlist and not self.is_editing():
+            # only the owner (with edit slug stored in session) can modify existing wishlist
+            raise PermissionDenied
+        if wishlist:
+            if request.POST.get("delete") == "doit":
+                # delete this wishlist
+                self.remove_edit_slug_from_session(wishlist.slug)
+                wishlist.delete()
+                messages.success(request, "Váš seznam přání byl úspěšně smazán.")
+                return HttpResponseRedirect(reverse("wishlist-intro"))
+
+            if request.POST.get("reset_reservations") == "doit":
+                # reset all reservations
+                wishlist.wishes.update(reserved_count=0)
+                messages.success(request, "Rezervace byly resetovány.")
+                return HttpResponseRedirect(wishlist.get_absolute_url())
+
+            if request.POST.get("forget") == "doit":
+                # remove this wishlist from session
+                self.remove_edit_slug_from_session(wishlist.slug)
+                messages.success(request, "Seznam přání byl zapomenut.")
+                return HttpResponseRedirect(reverse("wishlist-intro"))
+
         original_wish_ids = set(wishlist.wishes.values_list("id", flat=True)) if wishlist else set()
-
-        if request.POST.get("delete") == "doit":
-            # delete this wishlist
-            wishlist.delete()
-            messages.success(request, "Váš seznam přání byl úspěšně smazán.")
-            return HttpResponseRedirect(reverse("wishlist-intro"))
-
-        if request.POST.get("reset_reservations") == "doit":
-            # reset all reservations
-            wishlist.wishes.update(reserved_count=0)
-            messages.success(request, "Rezervace byly resetovány.")
-            return HttpResponseRedirect(wishlist.get_absolute_url())
-
-        if request.POST.get("forget") == "doit":
-            # remove this wishlist from session
-            self.remove_edit_slug_from_session(wishlist.slug)
-            messages.success(request, "Seznam přání byl zapomenut.")
-            return HttpResponseRedirect(reverse("wishlist-intro"))
 
         wishformset = WishFormSet(request.POST, instance=wishlist)
         wishlistform = WishListForm(request.POST, instance=wishlist)
@@ -158,10 +170,8 @@ class WishlistView(WishListViewMixin, TemplateView):
             if self.is_editing():
                 return HttpResponseRedirect(reverse("wishlist-detail", args=[wishlistform.instance.slug]))
             else:
-                return HttpResponseRedirect(
-                    reverse("wishlist-detail", args=[wishlistform.instance.slug])
-                    + "?edit_slug=%s" % wishlistform.instance.edit_slug
-                )
+                instance = wishlistform.instance
+                return HttpResponseRedirect(f"{reverse('wishlist-detail', args=[instance.slug])}?edit_slug={instance.edit_slug}")
 
         context = self.get_context_data(**kwargs)
         context["wishformset"] = wishformset
@@ -171,29 +181,40 @@ class WishlistView(WishListViewMixin, TemplateView):
     def put(self, request, *args, **kwargs):
         """
         (un)reserve wish
+
+        Secret is returned only to the one who has just reserved the wish. It changes every time
+        the wish goes from "not reserved" to "reserved", so old secrets cannot cancel new reservations.
         """
-        data = json.loads(request.body.decode("utf-8"))
-        secret = data.get("secret", "")
         wishlist = self.get_object()
-        error = ""
-        wish = wishlist.wishes.filter(pk=data.get("wish_id", 0)).first()
-        if wish:
-            if secret:
-                if secret == wish.secret:
-                    # un-reserve wish
-                    if wish.reserved_count > 0:
-                        wish.reserved_count -= 1
-                        wish.save()
-                else:
-                    error = "Nemáte právo zrušit tuto rezervaci."
-            elif not wish.reserved_count or wish.multiple_reservation:
-                wish.reserved_count += 1
-                wish.save()
-            else:
-                error = "Toto přání je již rezervováno někým jiným."
-        else:
-            error = "Wish does not exist."
-        return JsonResponse({"secret": wish.secret if wish else "", "reserved_count": wish.reserved_count, "error": error})
+        if not wishlist:
+            return JsonResponse({"error": "Seznam přání neexistuje."}, status=404)
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+            wish_id = int(data.get("wish_id"))
+            secret = str(data.get("secret") or "")
+        except (ValueError, TypeError, AttributeError):
+            return JsonResponse({"error": "Neplatný požadavek."}, status=400)
+
+        wishes = Wish.objects.filter(wishlist=wishlist, pk=wish_id)
+        if not wishes.exists():
+            return JsonResponse({"error": "Toto přání neexistuje."}, status=404)
+
+        if secret:
+            # un-reserve wish
+            if not wishes.filter(secret=secret).exists():
+                return JsonResponse({"error": "Nemáte právo zrušit tuto rezervaci."}, status=403)
+            wishes.filter(secret=secret, reserved_count__gt=0).update(reserved_count=F("reserved_count") - 1)
+            return JsonResponse({"reserved_count": wishes.get().reserved_count, "error": ""})
+
+        # reserve wish - conditional updates make it safe against concurrent requests
+        new_secret = create_hash()
+        reserved = wishes.filter(reserved_count=0).update(reserved_count=1, secret=new_secret) or wishes.filter(
+            multiple_reservation=True
+        ).update(reserved_count=F("reserved_count") + 1)
+        if not reserved:
+            return JsonResponse({"error": "Toto přání je již rezervováno někým jiným."}, status=409)
+        wish = wishes.get()
+        return JsonResponse({"secret": wish.secret, "reserved_count": wish.reserved_count, "error": ""})
 
 
 class WishlistIntro(WishListViewMixin, TemplateView):

@@ -110,15 +110,16 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "cs"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Europe/Prague"
 
 USE_I18N = True
-
-USE_L10N = True
 
 USE_TZ = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+
+# Keep "my wishlists" (edit access) in the browser for a year instead of default 2 weeks
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 365
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
