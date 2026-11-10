@@ -244,3 +244,152 @@ def test_reserve_wish_from_other_wishlist(wishlist):
 def test_reserve_in_missing_wishlist(db):
     response = Client().put("/neexistuje/", json.dumps({"wish_id": 1}), content_type="application/json")
     assert response.status_code == 404
+
+
+# ---------- wishlist image ----------
+
+
+def make_image(fmt="JPEG", size=(3000, 2000), mode="RGB", exif_orientation=None) -> bytes:
+    from io import BytesIO
+
+    from PIL import Image
+
+    img = Image.new(mode, size, "red")
+    buffer = BytesIO()
+    kwargs = {}
+    if exif_orientation:
+        exif = Image.Exif()
+        exif[0x0112] = exif_orientation  # Orientation
+        exif[0x8825] = {2: (50.0, 5.0, 0.0)}  # GPSInfo
+        kwargs["exif"] = exif
+    img.save(buffer, fmt, **kwargs)
+    return buffer.getvalue()
+
+
+def upload(content: bytes, name="foto.jpg"):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    return SimpleUploadedFile(name, content, content_type="image/jpeg")
+
+
+@pytest.fixture
+def media_root(settings, tmp_path):
+    settings.MEDIA_ROOT = tmp_path
+    return tmp_path
+
+
+def stored_images(wishlist):
+    from PIL import Image
+
+    return [Image.open(i.image.path) for i in wishlist.images.all()]
+
+
+def post_images(client, wishlist, files=(), delete=()):
+    data = formset_data(wishlist)
+    data["images"] = list(files)
+    data["delete_images"] = [str(i.id) for i in delete]
+    return client.post(wishlist.get_absolute_url(), data)
+
+
+def test_owner_can_upload_multiple_images(owner, wishlist, media_root):
+    response = post_images(owner, wishlist, [upload(make_image(exif_orientation=6)), upload(make_image(size=(50, 40)))])
+    assert response.status_code == 302
+    first, second = stored_images(wishlist)
+    assert first.format == "JPEG"
+    # rotated according to EXIF (3000x2000 -> portrait) and shrunk
+    assert first.size == (1067, 1600)
+    # metadata (incl. GPS location) are stripped
+    assert not first.getexif()
+    assert second.size == (50, 40)
+    for image in wishlist.images.all():
+        assert re.fullmatch(r"wishlists/[0-9a-f]{32}\.jpg", image.image.name)
+
+    content = Client().get(wishlist.get_absolute_url()).content.decode()
+    for image in wishlist.images.all():
+        assert image.image.url in content
+
+
+def test_create_wishlist_with_transparent_png(stranger, media_root):
+    data = formset_data(None, wishes=[(None, "Kolo")])
+    data["images"] = upload(make_image("PNG", size=(100, 50), mode="RGBA"), name="obrazek.png")
+    response = stranger.post(reverse("wishlist-create"), data)
+    assert response.status_code == 302
+    [img] = stored_images(WishList.objects.get())
+    assert (img.format, img.mode, img.size) == ("JPEG", "RGB", (100, 50))
+
+
+def test_invalid_image_is_rejected(owner, wishlist, media_root):
+    response = post_images(owner, wishlist, [upload(make_image(size=(50, 50))), upload(b"not an image", name="dopis.jpg")])
+    assert response.status_code == 200
+    assert "dopis.jpg" in response.context["wishlistform"].errors["images"][0]
+    assert not wishlist.images.exists()
+
+
+def test_too_big_image_is_rejected(owner, wishlist, media_root, monkeypatch):
+    monkeypatch.setattr("wishlist.forms.MAX_IMAGE_UPLOAD_SIZE", 100)
+    response = post_images(owner, wishlist, [upload(make_image(size=(50, 50)))])
+    assert response.status_code == 200
+    assert "příliš velký" in response.context["wishlistform"].errors["images"][0]
+
+
+def test_max_images(owner, wishlist, media_root, monkeypatch):
+    monkeypatch.setattr("wishlist.forms.MAX_IMAGES", 2)
+    post_images(owner, wishlist, [upload(make_image(size=(10, 10))), upload(make_image(size=(10, 10)))])
+    assert wishlist.images.count() == 2
+
+    response = post_images(owner, wishlist, [upload(make_image(size=(10, 10)))])
+    assert response.status_code == 200
+    assert response.context["wishlistform"].errors["images"]
+    assert wishlist.images.count() == 2
+
+    # replacing one image within the same request is fine
+    response = post_images(owner, wishlist, [upload(make_image(size=(10, 10)))], delete=wishlist.images.all()[:1])
+    assert response.status_code == 302
+    assert wishlist.images.count() == 2
+
+
+def test_stranger_cannot_upload_image(stranger, wishlist, media_root):
+    assert post_images(stranger, wishlist, [upload(make_image(size=(50, 50)))]).status_code == 403
+    assert not wishlist.images.exists()
+
+
+def test_saving_without_upload_keeps_images(owner, wishlist, media_root, django_capture_on_commit_callbacks):
+    post_images(owner, wishlist, [upload(make_image(size=(50, 50)))])
+    [image] = wishlist.images.all()
+
+    with django_capture_on_commit_callbacks(execute=True):
+        owner.post(wishlist.get_absolute_url(), formset_data(wishlist, name="Jan"))
+    wishlist.refresh_from_db()
+    assert wishlist.name == "Jan"
+    assert list(wishlist.images.all()) == [image]
+    assert (media_root / image.image.name).exists()
+
+
+def test_delete_single_image(owner, wishlist, media_root, django_capture_on_commit_callbacks):
+    post_images(owner, wishlist, [upload(make_image(size=(50, 50))), upload(make_image(size=(60, 60)))])
+    first, second = wishlist.images.all()
+
+    with django_capture_on_commit_callbacks(execute=True):
+        assert post_images(owner, wishlist, delete=[first]).status_code == 302
+    assert list(wishlist.images.all()) == [second]
+    assert not (media_root / first.image.name).exists()
+    assert (media_root / second.image.name).exists()
+
+
+def test_cannot_delete_image_of_other_wishlist(owner, wishlist, media_root):
+    other = WishList.objects.create(name="Jiný")
+    other_image = other.images.create(image=upload(make_image(size=(10, 10))))
+    response = post_images(owner, wishlist, delete=[other_image])
+    assert response.status_code == 200
+    assert response.context["wishlistform"].errors["delete_images"]
+    assert other.images.exists()
+
+
+def test_delete_wishlist_deletes_images(owner, wishlist, media_root, django_capture_on_commit_callbacks):
+    post_images(owner, wishlist, [upload(make_image(size=(50, 50))), upload(make_image(size=(60, 60)))])
+    paths = [media_root / i.image.name for i in wishlist.images.all()]
+    assert all(p.exists() for p in paths)
+
+    with django_capture_on_commit_callbacks(execute=True):
+        owner.post(wishlist.get_absolute_url(), {"delete": "doit"})
+    assert not any(p.exists() for p in paths)

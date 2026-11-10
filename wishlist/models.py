@@ -1,6 +1,8 @@
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Max, Sum
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 from django.urls import reverse
 from django.utils.html import escape, format_html
 
@@ -8,6 +10,21 @@ from .utils import create_hash
 
 SLUG_LENGTH = 8
 EDIT_SLUG_LENGTH = 24
+
+
+def wishlist_image_path(instance, filename: str) -> str:
+    # random name, so the image URL can't be guessed (only people with the share link see it)
+    return f"wishlists/{create_hash(32)}.jpg"
+
+
+def delete_file_on_commit(field_file) -> None:
+    """
+    Delete the file from storage once the current transaction commits (immediately when not in a transaction).
+    """
+    if not field_file:
+        return
+    storage, name = field_file.storage, field_file.name
+    transaction.on_commit(lambda: storage.delete(name))
 
 
 def unique_hash(model, field: str, length: int) -> str:
@@ -48,6 +65,24 @@ class WishList(models.Model):
 
     def get_absolute_url(self):
         return reverse("wishlist-detail", args=(self.slug,))
+
+
+class WishListImage(models.Model):
+    created = models.DateTimeField(auto_now_add=True)
+    wishlist = models.ForeignKey(WishList, related_name="images", on_delete=models.CASCADE)
+    image = models.ImageField("Obrázek", upload_to=wishlist_image_path)
+
+    class Meta:
+        ordering = ("created", "id")
+
+    def __str__(self):
+        return self.image.name
+
+
+@receiver(post_delete, sender=WishListImage)
+def delete_wishlist_image_file(sender, instance, **kwargs):
+    # called also when the whole wishlist is deleted (cascade)
+    delete_file_on_commit(instance.image)
 
 
 class Wish(models.Model):

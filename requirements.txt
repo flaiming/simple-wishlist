@@ -1,5 +1,6 @@
 Django==5.2.18
 django-bootstrap4==25.3
+Pillow==13.0.0
 
 # dev
 pre-commit==4.7.0

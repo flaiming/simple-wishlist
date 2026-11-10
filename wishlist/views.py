@@ -11,7 +11,7 @@ from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from django.views.generic import TemplateView
 
-from wishlist.forms import WishForm, WishListForm
+from wishlist.forms import MAX_IMAGES, WishForm, WishListForm
 from wishlist.models import Wish, WishList
 from wishlist.utils import create_hash
 
@@ -90,6 +90,7 @@ class WishlistView(WishListViewMixin, TemplateView):
         context["wishlistform"] = WishListForm(instance=wishlist)
         context["is_editing"] = self.is_editing()
         context["is_creating"] = not wishlist
+        context["max_images"] = MAX_IMAGES
         context["wishlist"] = wishlist
         return context
 
@@ -141,7 +142,7 @@ class WishlistView(WishListViewMixin, TemplateView):
         original_wish_ids = set(wishlist.wishes.values_list("id", flat=True)) if wishlist else set()
 
         wishformset = WishFormSet(request.POST, instance=wishlist)
-        wishlistform = WishListForm(request.POST, instance=wishlist)
+        wishlistform = WishListForm(request.POST, request.FILES, instance=wishlist)
         if wishformset.is_valid() and wishlistform.is_valid():
             with atomic():
                 wishlistform.save()

@@ -128,6 +128,11 @@ STATIC_URL = "/static/"
 
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
+# Uploaded files (wishlist images)
+MEDIA_URL = "/media/"
+
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
 
 LOGGING = {
     "version": 1,

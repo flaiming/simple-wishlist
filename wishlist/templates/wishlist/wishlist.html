@@ -2,7 +2,13 @@
 {%load bootstrap4%}
 
 {%block extrahead%}
+{%if wishlist and wishlist.images.exists%}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox@3.3.1/dist/css/glightbox.min.css" integrity="sha384-GPAzSuZc0kFvdIev6wm9zg8gnafE8tLso7rsAYQfc9hAdWCpOcpcNI5W9lWkYcsd" crossorigin="anonymous">
+{%endif%}
 <style>
+a.glightbox {
+    cursor: zoom-in;
+}
 .list-group-item.row div {
     padding: 0;
 }
@@ -36,6 +42,20 @@
     color: #dc3545;
     padding: 0;
 }
+.wishlist-image {
+    max-height: 500px;
+}
+.wishlist-images-grid .wishlist-image {
+    max-height: 300px;
+}
+.wishlist-image-edit {
+    width: 130px;
+}
+.wishlist-image-preview {
+    height: 110px;
+    width: 100%;
+    object-fit: cover;
+}
 .btn-remove-wish:hover,
 .btn-remove-wish:focus {
     color: #a71d2a;
@@ -48,7 +68,7 @@
 
 
     {%if is_editing or is_creating%}
-        <form method="post" id="wishlist-form">
+        <form method="post" id="wishlist-form" enctype="multipart/form-data">
             <h2 class="float-left">{%if is_editing%}Uprav{%else%}Vytvoř{%endif%} seznam přání</h2>
             {%if is_editing%}
             <div class="dropdown">
@@ -72,6 +92,28 @@
             {%csrf_token%}
             {%bootstrap_field wishlistform.name show_label=False addon_before='<i class="fas fa-user"></i>'%}
             {%bootstrap_field wishlistform.description show_label=False%}
+            <div class="form-group">
+                <label for="{{wishlistform.images.id_for_label}}"><i class="fas fa-images"></i>&nbsp; Obrázky k popisu (nepovinné), např. fotky dopisu Ježíškovi</label>
+                {%if wishlist%}{%with images=wishlist.images.all marked=wishlistform.delete_images.value%}
+                {%if images%}
+                <div class="d-flex flex-wrap mb-2">
+                    {%for img in images%}
+                    <div class="wishlist-image-edit mr-2 mb-2">
+                        <a href="{{img.image.url}}" class="glightbox" data-gallery="wishlist-images-edit"><img src="{{img.image.url}}" alt="Obrázek {{forloop.counter}}" class="img-thumbnail wishlist-image-preview"></a>
+                        <div class="form-check">
+                            <input type="checkbox" name="delete_images" value="{{img.id}}" id="delete_image_{{img.id}}" class="form-check-input"{%if marked and img.id|stringformat:"s" in marked%} checked{%endif%}>
+                            <label class="form-check-label" for="delete_image_{{img.id}}">Smazat</label>
+                        </div>
+                    </div>
+                    {%endfor%}
+                </div>
+                {%endif%}
+                {%endwith%}{%endif%}
+                {{wishlistform.images}}
+                {%for error in wishlistform.images.errors%}<div class="text-danger small mt-1">{{error}}</div>{%endfor%}
+                {%for error in wishlistform.delete_images.errors%}<div class="text-danger small mt-1">{{error}}</div>{%endfor%}
+                <small class="form-text text-muted">Můžete vybrat více obrázků najednou (nejvýše {{max_images}}). Obrázky se automaticky zmenší.</small>
+            </div>
             {{ wishformset.management_form }}
             <div id="wish-formset" class="mt-3">
                 {%for wishform in wishformset%}
@@ -154,6 +196,15 @@
             </div>
         </div>
         {%endif%}
+        {%with images=wishlist.images.all%}{%if images%}
+        <div class="row{%if images|length > 1%} wishlist-images-grid{%endif%}">
+            {%for img in images%}
+            <div class="{%if images|length > 1%}col-6 col-md-4 text-center{%else%}col-md-12{%endif%} mb-3">
+                <a href="{{img.image.url}}" class="glightbox" data-gallery="wishlist-images"><img src="{{img.image.url}}" alt="Obrázek {{forloop.counter}} k seznamu přání" class="img-fluid rounded wishlist-image"></a>
+            </div>
+            {%endfor%}
+        </div>
+        {%endif%}{%endwith%}
         <ul class="list-group">
         {%for wish in wishlist.wishes.all%}
             <li class="list-group-item">
@@ -180,6 +231,13 @@
 {%block extrajs%}
     {%if is_editing or is_creating%}
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    {%endif%}
+    {%if wishlist and wishlist.images.exists%}
+    <script src="https://cdn.jsdelivr.net/npm/glightbox@3.3.1/dist/js/glightbox.min.js" integrity="sha384-MZZbZ6RXJudK43v1qY1zOWKOU2yfeBPatuFoKyHAaAgHTUZhwblRTc9CphTt4IGQ" crossorigin="anonymous"></script>
+    <script>
+        // image gallery (lightbox) - opens clicked image over the page, with swipe/keyboard navigation between images
+        GLightbox({selector: '.glightbox', loop: true})
+    </script>
     {%endif%}
     <script>
         var wishlist_slug = '{{wishlist.slug}}'
